@@ -1,0 +1,23 @@
+{
+  "troop": {
+    "Assassin": 1,
+    "Bowman": 1,
+    "Champion": 1,
+    "Dragoon": 1,
+    "Duke": 1,
+    "Footman": 3,
+    "General": 1,
+    "Knight": 1,
+    "Longbowman": 1,
+    "Marshall": 1,
+    "Pikeman": 3,
+    "Priest": 1,
+    "Wizard": 1
+  },
+  "terrain": {
+
+  },
+  "enhanced": {
+
+  }
+}

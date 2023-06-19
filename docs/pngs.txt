@@ -1,0 +1,22 @@
+In the assets/pngs path there is a subdirectory called tiles.
+This file explains the formats and purposes of pngs in this subdirectory, to help support future modifications.
+
+Each file is named after a tile defined in data/tiles/types.json, with matching spelling and capitalization.
+The files show the two sides of these tiles, with very specific dimensions, 256x128 pixels.
+The pngs will be used to draw the tiles on the board. If they are sized wrong, they will not be drawn correctly.
+
+   side 1       side 2
+ ----------- -----------
+|           |           |
+|  128x128  |  128x128  |
+|           |           |
+ ----------- -----------
+
+When trying to add a new tile to the game, creating and adding the png for it is one step of the process.
+In general, one would also need to modify the json files holding the metadata about the tile.
+- Define the tile in data/tiles/types.json, as well as data/tiles/movements.json if it's a troop tile.
+    --> See docs/json_formats.txt for details on the json file format.
+    --> Make sure that in the json files as well as the png, spelling and capitalization is the same across all.
+- Create a png displaying both sides of the tile side by side horizontally, such that one side is 128x128 pixels,
+  meaning the full size is 256x128 pixels. The png is placed in assets/pngs/tiles.
+    --> If the tile only has one side to be used, the full png can be 128x128 pixels instead.

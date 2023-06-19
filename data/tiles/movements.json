@@ -1,0 +1,911 @@
+{
+  "assassin": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "1",
+        "move": "JUMP SLIDE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "JUMP SLIDE"
+      },
+      {
+        "file": "e",
+        "rank": "1",
+        "move": "JUMP SLIDE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "JUMP SLIDE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP SLIDE"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "JUMP SLIDE"
+      }
+    ]
+  },
+  "bowman": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "JUMP"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "STRIKE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "STRIKE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "STRIKE"
+      }
+    ]
+  },
+  "champion": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "JUMP"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "STRIKE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "STRIKE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "STRIKE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "STRIKE"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "JUMP"
+      }
+    ]
+  },
+  "dragoon": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "STRIKE"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "STRIKE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "STRIKE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "SLIDE"
+      },
+      {
+        "file": "b",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "SLIDE"
+      },
+      {
+        "file": "d",
+        "rank": "5",
+        "move": "JUMP"
+      }
+    ]
+  },
+  "duke": {
+    "side 1": [
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "SLIDE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "SLIDE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "SLIDE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "SLIDE"
+      }
+    ]
+  },
+  "footman": {
+    "side 1": [
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "MOVE"
+      }
+    ]
+  },
+  "general": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "MOVE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "COMMAND"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "COMMAND"
+      },
+      {
+        "file": "b",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "COMMAND"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "COMMAND"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "COMMAND"
+      },
+      {
+        "file": "d",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "MOVE"
+      }
+    ]
+  },
+  "knight": {
+    "side 1": [
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "5",
+        "move": "JUMP"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "1",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "SLIDE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "1",
+        "move": "MOVE"
+      }
+    ]
+  },
+  "longbowman": {
+    "side 1": [
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "STRIKE"
+      },
+      {
+        "file": "c",
+        "rank": "6",
+        "move": "STRIKE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      }
+    ]
+  },
+  "marshall": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "SLIDE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "SLIDE"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "JUMP"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "COMMAND"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "COMMAND"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "COMMAND"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "MOVE"
+      }
+    ]
+  },
+  "pikeman": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "MOVE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "b",
+        "rank": "5",
+        "move": "STRIKE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "5",
+        "move": "STRIKE"
+      }
+    ]
+  },
+  "priest": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "1",
+        "move": "SLIDE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "SLIDE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "SLIDE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "SLIDE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "JUMP"
+      }
+    ]
+  },
+  "seer": {
+    "side 1": [
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "JUMP"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "e",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "JUMP"
+      }
+    ]
+  },
+  "wizard": {
+    "side 1": [
+      {
+        "file": "b",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "b",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "c",
+        "rank": "4",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "2",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "3",
+        "move": "MOVE"
+      },
+      {
+        "file": "d",
+        "rank": "4",
+        "move": "MOVE"
+      }
+    ],
+    "side 2": [
+      {
+        "file": "a",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "a",
+        "rank": "3",
+        "move": "JUMP"
+      },
+      {
+        "file": "a",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "c",
+        "rank": "5",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "1",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "3",
+        "move": "JUMP"
+      },
+      {
+        "file": "e",
+        "rank": "5",
+        "move": "JUMP"
+      }
+    ]
+  }
+}

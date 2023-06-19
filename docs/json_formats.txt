@@ -1,0 +1,53 @@
+In the data/tiles path are two json files, movements.json and types.json.
+This file explains their formats and purposes, to help support future modifications.
+
+1. types.json
+This is an extremely simple file containing the list of all tiles that may be placed on the board.
+{
+    tile_type: {
+        tile: count,
+        tile: count,
+        ...
+    },
+    ...
+}
+The tile_type is one of "troop", "terrain", or "enhanced".
+- Currently, only troop tiles are going to be implemented, but the other categories are included for easy additions.
+An individual tile maps to an integer representing how many exist in the game.
+- When adding a new tile to the game, one should add the tile: count to the appropriate category.
+    --> Adding a new tile also calls for an added png in the assets and an added entry in movements.json.
+        See docs/pngs.txt for info on the required png format.
+    --> Capitalization and spelling of the tile must match across entries in the json files as well as the png file.
+
+2. movements.json
+In short, this file describes the valid movements of a troop tile in terms of file and rank.
+{
+  tile: {
+    "side 1": [
+      {
+        "file": file,
+        "rank": rank,
+        "move": move_type
+      },
+      ...
+    ],
+    "side 2": [
+      {
+        "file": file,
+        "rank": rank,
+        "move": move_type
+      },
+      ...
+    ]
+  },
+  ...
+}
+Here, tile is the name of a given troop tile, file is a letter in a-e inclusive, rank is an integer in 1-5 (or 2-6 in
+the Longbowman's case) inclusive, and move_type is one of "MOVE", "JUMP", "SLIDE", "JUMP SLIDE", "STRIKE", or "COMMAND".
+- The spelling and capitalization of a tile must match in both json files and the corresponding png file.
+- In terms of file and rank, all troop tiles are considered to be centered at c3.
+    --> File a represents the far left column, and every column moving right is in alphabetical order.
+    --> Rank 1 represents the bottommost row, and every row moving up is in numerical order.
+- For a given movement the troop tile can perform, the file and rank representing where that movement is allowed must
+  be included along with the move_type, as a struct in the list for the appropriate side, side 1 or side 2.
+- The different move_type options are explained in detail in the game's rules (found in assets).

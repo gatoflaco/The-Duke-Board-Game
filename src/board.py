@@ -15,15 +15,6 @@ class Board:
     The board is a 6x6 grid that can be represented as a 2D array.
     When a tile is placed on the board, it occupies one space on this 6x6 grid,
     or one (x, y)-coordinate pair in the 2D array.
-
-    Parameters
-    ----------
-    game_display : pygame.surface.Surface
-        Object returned by whatever module executes the line of code
-        pygame.display.set_mode() (most likely main.py). Whatever module does
-        this is also probably traceable from wherever a Board is instantiated.
-        Note that pygame.display.set_mode() will need to take dimensions large
-        enough for the image of the board to be loaded.
     """
 
     def __init__(self):
