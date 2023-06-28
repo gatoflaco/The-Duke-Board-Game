@@ -6,7 +6,7 @@ This module contains all code related to the board.
 """
 
 import pygame
-import src.constants as cnst
+from src.constants import DISPLAY_WIDTH, BOARD
 
 
 class Board:
@@ -18,7 +18,18 @@ class Board:
     """
 
     def __init__(self):
-        pass
+        self.__grid = [[None] * 6 for _ in range(6)]
 
-    def display(self, game_display):
-        game_display.blit(pygame.image.load(cnst.BOARD), ((cnst.DISPLAY_WIDTH - 808) / 2, 0))
+    def set_tile(self, x, y, tile):
+        self.__grid[x][y] = tile
+
+    def get_tile(self, x, y):
+        return self.__grid[x][y]
+
+    def draw(self, game_display):
+        game_display.blit(pygame.image.load(BOARD), ((DISPLAY_WIDTH - 808) / 2, 0))
+        for tile in sum(self.__grid, []):
+            if tile is not None:
+                tile.draw(game_display)
+
+
