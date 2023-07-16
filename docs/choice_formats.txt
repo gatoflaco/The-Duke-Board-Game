@@ -1,0 +1,392 @@
+Inside of game.py and player.py, there are some dicts that get passed back and forth.
+Each module assumes that the dicts they pass and receive are in specific formats.
+This file serves as a reference for the formats.
+
+
+========================================================================================================================
+Section 1: "choices" and "actions"
+
+
+First of all, the dict that the game generates to represent all possible actions a player can take, called "choices":
+{
+    'pull': [
+        (i1, j1),
+        (i2, j2),
+        ...
+        (in, jn)
+    ],
+    'act': {
+        (x1, y1): actions1,
+        (x2, y2): actions2,
+        ...
+        (xn, yn): actionsn
+    }
+}
+The dict must have exactly two keys, 'pull' and 'act'.
+The value of 'pull' is a list of (i, j)-coordinates at which a new tile may be played.
+    Note that the Duke tile can only ever have four open spaces around it maximum.
+    Therefore, there can only ever be up to four (i, j)-coordinates in this list.
+The value of 'act' is itself a dict, which contains (x, y)-coordinates as keys and "actions" as values.
+    There will be an (x, y)-coordinate for each troop tile the player has on the board.
+        The (x, y)-coordinate represents that troop tile's location on the board.
+    An "action" is a dict that will be described later.
+Initially, this dict is created by the get_choices() function in game.py.
+It is created containing an empty list for 'pull' and an empty dict for 'act'.
+It is filled out by calling helper functions.
+When finished, 'pull' may still be an empty list if the game found no valid ways to pull a new tile.
+'Act' will always have at least a key for the coordinates of the Duke.
+
+The next dict is one referenced above in the "choices" dict.
+It represents all the actions a given troop tile can take at the moment. We will call it "actions":
+{
+    'moves': [
+        (i1, j1),
+        (i2, j2),
+        ...
+        (in, jn)
+    ],
+    'strikes': [
+        (i1, j1),
+        (i2, j2),
+        ...
+        (in, jn)
+    ],
+    'commands': {
+        (i1, j1): [
+            (u1, v1),
+            (u2, v2),
+            ...
+            (un, vn)
+        ]
+        (i2, j2): [
+            (u1, v1),
+            (u2, v2),
+            ...
+            (un, vn)
+        ]
+        ...
+        (in, jn): [
+            (u1, v1),
+            (u2, v2),
+            ...
+            (un, vn)
+        ]
+    }
+}
+This dict must have exactly three keys, 'moves', 'strikes', and 'commands'.
+The value of 'moves' is a list of (i, j)-coordinates to which the troop tile in question is able to move.
+    The calculations for moves, jumps, slides, and jump slides all result in additions to this list.
+    A given (i, j)-coordinate may represent an enemy tile's location, or an open space.
+The value of 'strikes' is a list of (i, j)-coordinates at which the troop tile in question is able to strike.
+    A given (i, j)-location necessarily must represent an enemy tile's location.
+The value of 'commands' is a dict whose keys are (i, j)-coordinates and whose values are lists of (u, v)-coordinates.
+    An (i, j)-coordinate key represents a tile that the troop is able to command.
+        These must necessarily be locations of teammates.
+    The list of (u, v)-coordinates represents the tiles to which a troop at a given (i, j) can be commanded to move.
+        These (u, v) locations may represent enemy tile locations, or open spaces.
+
+With these two dictionaries explained, we can now go over an example.
+Consider the following board state:
+5    .    .    .    .    .    .
+
+4    .   M22   .   G12   .    .
+
+3   W22  D21  F21  D11  F12   .
+
+2    .    .    .   B12   .    .
+
+1    .    .    .    .    .    .
+
+0    .    .    .    .    .    .
+
+     0    1    2    3    4    5
+Here the board is labeled with its horizontal and vertical indices.
+The format for the pieces is a letter abbreviation, followed by a number for the player to which it belongs, followed by
+    a number for the side that is currently face up.
+For example, D11 is player 1's Duke, with its initial side face up. F21 is player 2's Footman, with its initial side up.
+In this board state, consider that it is player 1's turn. Player 1 has 4 pieces on the board:
+- A Duke located at (3, 3), that can slide left or right.
+- A Footman located at (4, 3), that can move 1 space diagonally in any direction, or 2 spaces away in front of itself.
+- A General located at (3, 4), that can move up to 2 spaces left or right or 1 space in front, jump in an L shape in
+    front, or command in a u shape around and underneath itself (see the png asset for best understanding).
+- A Bowman located at (3, 2), that can move 1 space in front or diagonally behind, or strike 2 spaces in front or 1
+    space diagonally in front.
+The rest of the pieces belong to player 2.
+Player 1's "choices" dict might look something like this:
+{
+    'pull': []
+    'act': {
+        (3, 3): {
+            'moves': [
+                (2, 3)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (4, 3): {
+            'moves': [
+                (4, 5),
+                (5, 2),
+                (5, 4)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (3, 4): {
+            'moves': [
+                (1, 4),
+                (2, 4),
+                (3, 5),
+                (4, 4),
+                (5, 4)
+            ],
+            'strikes': []
+            'commands': {
+                (3, 3): [
+                    (2, 3),
+                    (2, 4),
+                    (4, 4)
+                ],
+                (4, 3): [
+                    (2, 3),
+                    (2, 4),
+                    (4, 4)
+                ]
+            }
+        },
+        (3, 2): {
+            'moves': [
+                (2, 1),
+                (4, 1)
+            ],
+            'strikes': [
+                (2, 3)
+            ]
+            'commands': {}
+        }
+    }
+}
+For now, we are ignoring the fact that Player 1 is in check.
+We see that the 'pull' list is empty, because there are no open spaces around the Duke.
+(3, 3) is Player 1's Duke, and it can slide only directly to its left 1 tile before encountering an enemy to capture.
+(4, 3) is the Footman. It cannot move into its teammate's spaces, but otherwise there are 3 open tiles it can move to.
+(3, 4) is the General. Note that if it were to move to (1, 4), it would capture the enemy Marshall. It also has quite
+    a bit going on with its 'commands'. (3, 3) and (4, 3) are teammates that it can command. (2, 3), (2, 4), and (4, 4)
+    are all places that (3, 3) or (4, 3) could be moved to. Note in particular that if (3, 3) or (4, 3) were moved to
+    (2, 3), the enemy Footman would be captured.
+(3, 2) is the Bowman. It can move to the open spaces behind it, but it is blocked from moving to (3, 3) by its teammate.
+    Meanwhile, (2, 3) is in its 'strikes' because there is an enemy there.
+As noted, this "choices" dict is incorrect, because it does not account for the Duke's safety. Let's do so now:
+{
+    'pull': []
+    'act': {
+        (3, 3): {
+            'moves': [],
+            'strikes': []
+            'commands': {}
+        },
+        (4, 3): {
+            'moves': [],
+            'strikes': []
+            'commands': {}
+        },
+        (3, 4): {
+            'moves': [],
+            'strikes': []
+            'commands': {
+                (3, 3): [
+                    (4, 4)
+                ],
+                (4, 3): [
+                    (2, 3)
+                ]
+            }
+        },
+        (3, 2): {
+            'moves': [],
+            'strikes': []
+            'commands': {}
+        }
+    }
+}
+As we can now see, there are only 2 valid moves. The General must either command the Duke or the Footman.
+If it commands the Duke, it must move the Duke to its right, to keep it out of danger.
+If it commands the Footman, it must specifically use that Footman to capture the enemy Footman, to keep the Duke
+    protected from the enemy Duke.
+All other actions are invalid because they would leave the Duke in danger.
+For example, if the Bowman performed its strike action on the enemy Footman, it would open up a line for the enemy Duke
+    to attack Player 1's Duke, so that move is not valid.
+
+This dict is handed from game.py to player.py, specifically to the take_turn() function belonging to Player 1.
+Player 1 is prompted to take an action based on the dict.
+For example, if they mouse click on their Duke, they will get an option to inspect it, or cancel. They will see no
+    movement options, because there is nothing their Duke is allowed to do.
+Meanwhile, if they mouse click on their General, they will see that they can inspect it, cancel, or click on either
+    their Duke or Footman next. Clicking on their Footman, they would then have options to cancel or move it to the one
+    valid space it can move, where the enemy Footman is.
+
+
+========================================================================================================================
+Section 2: "choice"
+
+
+Continuing with the earlier example, let's pretend that Player 1 chose to use their General to command their Duke to
+    move. Upon clicking the enemy Footman, their choice would be confirmed, and control would return to game.py, with a
+    special dictionary being passed to inform game.py of the player's choice.
+We will call this dict "choice":
+{
+    'action_type': string
+    'src_location': (x1, y1),
+    'dst_location': (x2, y2),
+    'str_location': (x2, y2),
+    'cmd_location': (x3, y3),
+    'tile': Troop
+}
+This dict must have at least an 'action_type' and 'src_location'.
+The 'src_location' meaning depends on the 'action_type'.
+The 'action_type' can be 'pull', 'mov', 'str', or 'cmd'.  It dictates what other keys are in the dict.
+    When 'pull', the dict will have just 'tile' in addition to 'action_type' and 'src_location'.
+        The 'src_location' is a pair of (x, y)-coordinates where the tile is being played.
+        The 'tile' is a Troop object, the troop pulled from the bag.
+            For all other 'action_type' values, 'tile' is omitted, but later set by game.py to None or a captured troop.
+    When 'mov', the dict will also have 'dst_location'.
+        The 'src_location' is a pair of (x, y)-coordinates where the moving tile is located.
+        The 'dst_location' is a pair of (x, y)-coordinates where the moving tile is trying to move.
+    When 'str', the dict will also have 'str_location'.
+        The 'src_location' is a pair of (x, y)-coordinates where the striking tile is located.
+        The 'str_location' is a pair of (x, y)-coordinates where the striking tile is trying to strike.
+    When 'cmd', the dict will also have 'dst_location' and 'cmd_location'.
+        The 'src_location' is a pair of (x, y)-coordinates where the commanded tile is located.
+        The 'dst_location' is a pair of (x, y)-coordinates where the commanded tile is trying to move.
+        The 'cmd_location' is a pair of (x, y)-coordinates where the commanding tile is located.
+
+Continuing with the example used so far, the "choice" dict returned by Player 1 would look like this:
+{
+    'action_type': 'cmd'
+    'src_location': (3, 3),
+    'dst_location': (4, 4),
+    'cmd_location': (3, 4),
+    'tile': None
+}
+This says that Player 1 had the troop at (3, 4) command the troop at (3, 3) to move to (4, 4).
+
+The game would take this information and update the board state:
+5    .    .    .    .    .    .
+
+4    .   M22   .   G11  D11   .
+
+3   W22  D21  F21   .   F12   .
+
+2    .    .    .   B12   .    .
+
+1    .    .    .    .    .    .
+
+0    .    .    .    .    .    .
+
+     0    1    2    3    4    5
+We can see that the General had the Duke move to its right, and then the General flipped to side 1.
+After making this move, the game would have both players recalculate their allowed actions (more accurately, the game
+    recalculates for them, and simply updates them to be aware of their new "choices" dicts).
+
+The "choices" dict for Player 1 would then look like this:
+{
+    'pull': [
+        (4, 5),
+        (5, 4)
+    ]
+    'act': {
+        (4, 4): {
+            'moves': [
+                (5, 4)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (4, 3): {
+            'moves': [
+                (5, 2),
+                (5, 4)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (3, 4): {
+            'moves': [
+                (1, 4),
+                (3, 3),
+                (3, 5)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (3, 2): {
+            'moves': [
+                (2, 1),
+                (3, 3),
+                (4, 1)
+            ],
+            'strikes': [
+                (2, 3)
+            ]
+            'commands': {}
+        }
+    }
+}
+
+And the "choices" dict for Player 2 would look like this:
+{
+    'pull': [
+        (1, 2)
+    ]
+    'act': {
+        (1, 3): {
+            'moves': [],
+            'strikes': []
+            'commands': {}
+        },
+        (2, 3): {
+            'moves': [
+                (2, 2),
+                (2, 4),
+                (3, 3)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (0, 3): {
+            'moves': [
+                (0, 1),
+                (0, 5),
+                (2, 1),
+                (2, 5)
+            ],
+            'strikes': []
+            'commands': {}
+        },
+        (1, 4): {
+            'moves': [
+                (0, 4),
+                (0, 5),
+                (2, 4),
+                (2, 5),
+                (3, 3)
+            ],
+            'strikes': []
+            'commands': {
+                (0, 3): [],
+                (1, 3): [],
+                (2, 3): []
+            }
+        }
+    }
+}
+
+
+========================================================================================================================
+Section 3: miscellaneous notes
+
+- None of the dictionaries explicitly note which side up anything is. That information is used to calculate what is
+    allowed, but it isn't needed in communicating between the game and a player.
+- None of the dictionaries explicitly note whether a move would capture an enemy tile. That information is resolved
+    when the move is carried out on the board, and the appropriate states are updated accordingly. Again, such
+    information isn't needed in communicating between the game and a player.

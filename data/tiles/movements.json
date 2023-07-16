@@ -1,909 +1,909 @@
 {
-  "assassin": {
+  "Assassin": {
     "side 1": [
       {
         "file": "a",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP SLIDE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP SLIDE"
       },
       {
         "file": "e",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP SLIDE"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP SLIDE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP SLIDE"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP SLIDE"
       }
     ]
   },
-  "bowman": {
+  "Bowman": {
     "side 1": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       }
     ],
     "side 2": [
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "STRIKE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "STRIKE"
       }
     ]
   },
-  "champion": {
+  "Champion": {
     "side 1": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "STRIKE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "STRIKE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "STRIKE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "STRIKE"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       }
     ]
   },
-  "dragoon": {
+  "Dragoon": {
     "side 1": [
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       }
     ],
     "side 2": [
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "SLIDE"
       },
       {
         "file": "b",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "SLIDE"
       },
       {
         "file": "d",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       }
     ]
   },
-  "duke": {
+  "Duke": {
     "side 1": [
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "SLIDE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "SLIDE"
       }
     ],
     "side 2": [
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "SLIDE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "SLIDE"
       }
     ]
   },
-  "footman": {
+  "Footman": {
     "side 1": [
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       }
     ],
     "side 2": [
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       }
     ]
   },
-  "general": {
+  "General": {
     "side 1": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "COMMAND"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "COMMAND"
       },
       {
         "file": "b",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "COMMAND"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "COMMAND"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "COMMAND"
       },
       {
         "file": "d",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       }
     ]
   },
-  "knight": {
+  "Knight": {
     "side 1": [
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "1",
+        "rank": 1,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "SLIDE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "1",
+        "rank": 1,
         "move": "MOVE"
       }
     ]
   },
-  "longbowman": {
+  "Longbowman": {
     "side 1": [
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       }
     ],
     "side 2": [
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       },
       {
         "file": "c",
-        "rank": "6",
+        "rank": 6,
         "move": "STRIKE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       }
     ]
   },
-  "marshall": {
+  "Marshall": {
     "side 1": [
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "SLIDE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "SLIDE"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "COMMAND"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "COMMAND"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "COMMAND"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       }
     ]
   },
-  "pikeman": {
+  "Pikeman": {
     "side 1": [
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "MOVE"
       }
     ],
     "side 2": [
       {
         "file": "b",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "5",
+        "rank": 5,
         "move": "STRIKE"
       }
     ]
   },
-  "priest": {
+  "Priest": {
     "side 1": [
       {
         "file": "a",
-        "rank": "1",
+        "rank": 1,
         "move": "SLIDE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "SLIDE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "SLIDE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "SLIDE"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       }
     ]
   },
-  "seer": {
+  "Seer": {
     "side 1": [
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "e",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       }
     ]
   },
-  "wizard": {
+  "Wizard": {
     "side 1": [
       {
         "file": "b",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "b",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "c",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "2",
+        "rank": 2,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "3",
+        "rank": 3,
         "move": "MOVE"
       },
       {
         "file": "d",
-        "rank": "4",
+        "rank": 4,
         "move": "MOVE"
       }
     ],
     "side 2": [
       {
         "file": "a",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "a",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       },
       {
         "file": "a",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "c",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "1",
+        "rank": 1,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "3",
+        "rank": 3,
         "move": "JUMP"
       },
       {
         "file": "e",
-        "rank": "5",
+        "rank": 5,
         "move": "JUMP"
       }
     ]
