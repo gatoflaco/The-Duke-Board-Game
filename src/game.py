@@ -6,8 +6,9 @@ This module contains all the code related to playing a game of The Duke.
 """
 
 from src.board import Board
-from src.player import Player
-from src.tile import Tile, Troop
+# from src.player import Player
+from src.ai import AI
+from src.tile import Troop
 from src.util import *
 from src.constants import TROOP_MOVEMENTS
 from itertools import chain
@@ -24,8 +25,8 @@ class Game:
     def __init__(self):
         self.__board = Board()
         self.__turn = 0
-        player1 = Player(1)
-        player2 = Player(2)
+        player1 = AI(1, self)
+        player2 = AI(2, self)
         self.__players = (player1, player2)
         self.__actions_taken = {}  # will hold (self.__turn: "choice") key-value pairs
         self.__winner = None
@@ -35,8 +36,14 @@ class Game:
                 self.__board.set_tile(x, y, tile)
             player.update_choices(self.get_choices(player))
 
+    def get_board(self):
+        return self.__board
+
     def get_turn(self):
         return self.__turn
+
+    def get_players(self):
+        return self.__players
 
     def update(self, game_display):
         """Draws the current game state to the screen.
@@ -50,9 +57,9 @@ class Game:
         """Main gameplay loop.
 
         A single call will consist of the following broad steps for whichever player is up to take their turn:
-        1. get player input
-        2. carry out player decision on board
-        3. recalculate current game state, including what both players can currently do, and if check/checkmate
+            1. get player input
+            2. carry out player decision on board
+            3. recalculate current game state, including what both players can currently do, and if check/checkmate
         """
         self.__turn += 1
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
@@ -60,7 +67,7 @@ class Game:
         player.set_check(False)  # must not be in check at this point
         player_choices = self.get_choices(player)  # recalculate player's allowed moves
         player.update_choices(player_choices)
-        player_attacks = get_enemy_attacks(player.get_choices())
+        player_attacks = get_attacks(player_choices)
         stalemate = True
         if len(player_choices['act']) > 1 or player.has_tiles_in_bag():
             stalemate = False
@@ -133,8 +140,8 @@ class Game:
                 0 <= i < 6 and 0 <= j < 6 and self.__board.get_tile(i, j) is None and
                 not self.duke_would_be_endangered(player, {
                     'action_type': 'pull',
-                    'tile': Troop('', player.get_side(), (i, j), True),
-                    'src_location': (i, j)
+                    'src_location': (i, j),
+                    'tile': Troop('', player.get_side(), (i, j), True)
                 })
             )
         ]
@@ -239,9 +246,9 @@ class Game:
         Just like in chess, when a player is in check, they may only take actions that get out of the state.
         Additionally, a player may not make a move that self-induces check.
         This can be generalized to the following logic when considering an action:
-        1. make the move
-        2. see if the Duke is in check
-        3. undo the move
+            1. make the move
+            2. see if the Duke is in check
+            3. undo the move
 
         :param player: Player object of the player considering taking the action
         :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
@@ -258,7 +265,7 @@ class Game:
         for other in self.__players:  # recalculate the allowed moves for the opponent(s)
             if player != other:
                 other_choices = self.get_choices(other, False)  # will include even attacks that endanger their Duke
-                all_enemy_attacks = all_enemy_attacks.union(get_enemy_attacks(other_choices))
+                all_enemy_attacks = all_enemy_attacks.union(get_attacks(other_choices))
         if player.get_duke().get_coords() in all_enemy_attacks:
             would_be_endangered = True
         for i in range(len(self.__players)):  # restore saved states

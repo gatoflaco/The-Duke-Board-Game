@@ -7,6 +7,17 @@ This module contains utility functions.
 
 
 def convert_file_and_rank_to_coordinates(file, rank, player_side=1):
+    """Converts from a location written in (file, rank) format to actual (x, y)-coordinates.
+
+    In data/tiles/movements.json, moves are described in (file, rank) format, where (c, 2) is considered to be the
+        center, where the tile is located. However, the program calculates board movements using (x, y) pairs.
+
+    :param file: char corresponding to columns, or x-coordinates, on the board
+    :param rank: int corresponding to rows, or y-coordinates, on the board
+    :param player_side: int representing from which player's perspective the function should convert
+        Everything is mirrored from the second player's perspective.
+    :return: (x, y)-coordinates corresponding to the given (file, rank)
+    """
     file_mapping = {'a': -2, 'b': -1, 'c': 0, 'd': 1, 'e': 2}
     x = file_mapping.get(file)
     if x is None:
@@ -69,20 +80,30 @@ def path_is_open(board, i, j, dx, dy):
     return all(tile is None for tile in [board.get_tile(i-step*it_x, j-step*it_y) for step in range(1, num_tiles)])
 
 
-def get_enemy_attacks(enemy_choices):
+def get_attacks(choices):
+    """Determines all locations under attack according to the given choices.
+
+    :param choices: special dict called "choices", whose format is documented in docs/choice_formats.txt
+    :return: set of (x, y)-coordinate locations at which the given choices dict indicates an attack
+    """
     enemy_attacks = set()
-    for x, y in enemy_choices['act']:
-        for move in enemy_choices['act'][(x, y)]['moves']:
-            enemy_attacks.add(move)
-        for strike in enemy_choices['act'][(x, y)]['strikes']:
-            enemy_attacks.add(strike)
-        for command in enemy_choices['act'][(x, y)]['commands']:
-            if not enemy_choices['act'][(x, y)]['commands'][command]:
-                enemy_attacks.add(command)
+    for x, y in choices['act']:
+        for mov_loc in choices['act'][(x, y)]['moves']:
+            enemy_attacks.add(mov_loc)
+        for str_loc in choices['act'][(x, y)]['strikes']:
+            enemy_attacks.add(str_loc)
+        for teammate_loc in choices['act'][(x, y)]['commands']:
+            for cmd_loc in choices['act'][(x, y)]['commands'][teammate_loc]:
+                enemy_attacks.add(cmd_loc)
     return enemy_attacks
 
 
 def has_no_valid_choices(choices):
+    """Determines whether no action can be taken according to the given choices.
+
+    :param choices: special dict called "choices", whose format is documented in docs/choice_formats.txt
+    :return: boolean representing whether there are no valid choices - True if so, False if not
+    """
     if len(choices['pull']) != 0:
         return False
     for troop_loc in choices['act']:
