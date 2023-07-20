@@ -8,8 +8,29 @@ This module contains code implementing the AI for vs CPU games.
 from src.player import Player
 from src.tile import Troop
 from src.util import *
-from src.constants import STARTING_TROOPS
+from src.constants import STARTING_TROOPS, TROOP_WEIGHTS
 from random import randrange, shuffle
+
+
+class Difficulty:
+    """Serves as a sort of enum for the difficulty levels the AI can have.
+
+    The beginner AI does not think at all, and will just make random moves.
+    The easy AI makes decisions without ever considering the consequences of moves; it just utilizes generalized rules
+    of thumb to rate a given decision as good or bad (e.g., if the move would capture an enemy tile, it is better than a
+    move that would not).
+    The normal AI does some basic consideration of whether a move would put themselves in an advantageous or
+    disadvantageous position (e.g., if making the move would put their opponent in check, this is good) in addition to
+    the generalized heuristics utilized by the easy AI.
+    The hard AI makes lots of considerations about the consequences of an action, (e.g., if the move would allow them to
+    defend an otherwise unguarded teammate that is currently under attack, this is good).
+    The expert AI skips the easy AI heuristics and only scores good or bad based on the consequences of a move.
+    """
+    BEGINNER = 0
+    EASY = 1
+    NORMAL = 2
+    HARD = 3
+    EXPERT = 4
 
 
 class AI(Player):
@@ -24,11 +45,14 @@ class AI(Player):
     game : Game object
         Reference to own Game in which the AI was instantiated.
         Needed so that the AI can ask the game to carry out some computations for it, such as pretend moves.
+    difficulty : Difficulty attribute (optional; Difficulty.NORMAL by default)
+        Difficulty level of the AI. Affects how much thought goes into move scoring.
     """
 
-    def __init__(self, side, game):
+    def __init__(self, side, game, difficulty=Difficulty.NORMAL):
         super(AI, self).__init__(side)
         self.__game = game  # AI will need access to game's functions like make_choice() and undo_choice() for scoring
+        self.__difficulty = difficulty
 
     def setup_phase(self):
         """Runs the setup phase for an AI.
@@ -74,25 +98,26 @@ class AI(Player):
 
         :return: special dict called "choice", whose format is documented in docs/choice_formats.txt
         """
-        choice_list = self.initialize_choice_list()
+        choice_list = self.__initialize_choice_list()
         shuffle(choice_list)  # for randomness
         mapping = {}
         total_score = 0
         for i in range(len(choice_list)):
-            total_score += self.score_choice(choice_list[i])
+            total_score += self.__score_choice(choice_list[i])
             mapping[i] = total_score
-        if total_score == 0:  # if all choices are equally bad, just pick the first one (random after having shuffled)
-            return choice_list[0]
-        n = randrange(0, total_score)
-        for i in range(len(choice_list)):
-            if n < mapping[i]:  # found the choice in whose range the rng landed
-                choice = choice_list[i]
-                if choice['action_type'] == 'pull':  # need to actually draw the new tile here
-                    x, y = choice['src_location']
-                    choice['tile'] = self.play_new_troop_tile(x, y)
-                return choice
+        choice = choice_list[0]  # if all choices are equally bad, this will be used (random after having shuffled)
+        if total_score != 0:  # if all choices WEREN'T equally bad
+            n = randrange(0, total_score)
+            for i in range(len(choice_list)):
+                if n < mapping[i]:  # found the choice in whose range the rng landed
+                    choice = choice_list[i]
+                    break
+        if choice['action_type'] == 'pull':  # need to actually draw the new tile here
+            x, y = choice['src_location']
+            choice['tile'] = self.play_new_troop_tile(x, y)
+        return choice
 
-    def initialize_choice_list(self):
+    def __initialize_choice_list(self):
         """Creates a list of choice dicts that the AI can score in its take_turn() function.
 
         The AI's take_turn() overrides that of its parent class, Player. Check the docstring for the AI take_turn()
@@ -130,34 +155,118 @@ class AI(Player):
                     })
         return choice_list
 
-    def score_choice(self, choice):
+    def __score_choice(self, choice):
         """Carries out the bulk of the scoring logic for a given choice.
 
         :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
         :return: score for the given choice, a non-negative integer
             Larger values indicate more promise. If the score is 0, it absolutely should not be picked.
         """
+        if self.__difficulty == Difficulty.BEGINNER:
+            return 0    # if every choice scores 0, take_turn() should choose a random move
+
         score = 100
 
+        if self.__difficulty != Difficulty.EXPERT:
+            score += self.__general_heuristics(choice)
+
+        if self.__difficulty == Difficulty.EASY:
+            return score  # should not consider consequences of making the choice
+
+        # next, pretend to make the move and see what effect it has on the game
+        score += self.__consider_consequences(choice)
+
+        return score if score >= 0 else 0  # don't return negative numbers
+
+    def __general_heuristics(self, choice):
+        """Helper for __score_choice() that makes generalizations without actually pretending to make the move.
+
+        :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
+        :return: score for the given choice
+        """
+        score = 0
         board = self.__game.get_board()
+        x, y = choice['src_location']
         if choice['action_type'] == 'pull':
-            pass  # TODO: think about this lol
+            if self.__difficulty > Difficulty.EASY:
+                score += self.__consider_trapped_duke(-1, -1, x, y)
+            if self.__difficulty > Difficulty.NORMAL:
+                # TODO: call function to calculate expected value of tile that would be pulled
+                #  that is, sum up all (probability of pulling t * value of t on side 1) and divide for the average
+                pass
         elif choice['action_type'] == 'mov':
             i, j = choice['dst_location']
             dst_tile = board.get_tile(i, j)
             if tile_is_enemy(dst_tile, self):
                 score += 50  # prefer capturing enemy tiles
+                if self.__difficulty > Difficulty.EASY:
+                    score += TROOP_WEIGHTS[dst_tile.get_name()][str(dst_tile.get_side())]
+            if self.__difficulty > Difficulty.EASY:
+                score += self.__consider_trapped_duke(x, y, i, j)
+            if self.__difficulty > Difficulty.NORMAL:
+                pass  # call function to look at what src tile would flip to (if it becomes useless, subtract score)
         elif choice['action_type'] == 'str':
             score += 50  # prefer capturing enemy tiles
+            if self.__difficulty > Difficulty.EASY:
+                i, j = choice['str_location']
+                str_tile = board.get_tile(i, j)
+                score += TROOP_WEIGHTS[str_tile.get_name()][str(str_tile.get_side())]
+            if self.__difficulty > Difficulty.NORMAL:
+                pass  # call function to look at what src tile would flip to (if it becomes useless, subtract score)
         elif choice['action_type'] == 'cmd':
             i, j = choice['dst_location']
             dst_tile = board.get_tile(i, j)
             if tile_is_enemy(dst_tile, self):
                 score += 50  # prefer capturing enemy tiles
+                if self.__difficulty > Difficulty.EASY:
+                    score += TROOP_WEIGHTS[dst_tile.get_name()][str(dst_tile.get_side())]
+            if self.__difficulty > Difficulty.EASY:
+                score += self.__consider_trapped_duke(x, y, i, j)
+            if self.__difficulty > Difficulty.NORMAL:
+                pass  # call function to look at what cmd tile would flip to (if it becomes useless, subtract score)
         # TODO: consider more context than just whether the action would capture
         #  for example, avoid trapping own Duke from moving, avoid moving Duke into a corner, etc.
+        return score
 
-        # next, pretend to make the move and see what effect it has on the game
+    def __consider_trapped_duke(self, x, y, i, j):
+        """Helper for __general_heuristics() that looks to see if moving a tile would block the Duke.
+
+        :param x: x-coordinate of moving tile
+        :param y: y-coordinate of moving tile
+        :param i: x-coordinate of location to which tile is moving
+        :param j: y-coordinate of location to which tile is moving
+        :return: score in range [-100, 100] (in increments of 20)
+            larger negative score means Duke gets trapped worse, 0 means Duke is not trapped at all
+        """
+        score = 0
+        duke_x, duke_y = self._duke.get_coords()
+        if duke_x == x and duke_y == y:  # moving tile IS the Duke
+            return 0  # Duke cannot trap itself lol
+
+        # first, consider improving score if tile is starting in the Duke's way
+        if self._duke.get_side() == 1 and y == duke_y:  # if tile is currently in same rank as Duke on side 1
+            distance = abs(x - duke_x) - 1  # e.g., when directly adjacent, consider distance to be 0
+            score += (100 - distance * 20)  # the closer to the Duke, the more trapped, so add more
+        elif self._duke.get_side() == 2 and x == duke_x:  # if tile is currently in same file as Duke on side 2
+            distance = abs(y - duke_y) - 1
+            score += (100 - distance * 20)
+
+        # next, consider worsening score if tile would move into the Duke's way
+        if self._duke.get_side() == 1 and j == duke_y:  # if move would end in same rank as Duke on side 1
+            distance = abs(i - duke_x) - 1
+            score -= (100 - distance * 20)  # the closer to the Duke, the more trapped, so subtract more
+        elif self._duke.get_side() == 2 and i == duke_x:  # if move would end in same file as Duke on side 2
+            distance = abs(j - duke_y) - 1
+            score -= (100 - distance * 20)
+        return score
+
+    def __consider_consequences(self, choice):
+        """Helper for __score_choice() that looks at what would happen if the move were made.
+
+        :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
+        :return: score for the given choice
+        """
+        score = 0
         players = self.__game.get_players()
         cur_in_play = []
         for p in players:  # save some states before they get modified
@@ -178,5 +287,4 @@ class AI(Player):
         for i in range(len(players)):  # restore saved states
             players[i].set_tiles_in_play(cur_in_play[i])
         self.__game.undo_choice(self)
-
-        return score if score >= 0 else 0  # don't return negative numbers
+        return score

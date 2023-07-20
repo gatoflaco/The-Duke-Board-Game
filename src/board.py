@@ -6,7 +6,7 @@ This module contains all code related to the board.
 """
 
 import pygame
-from src.constants import DISPLAY_WIDTH, BOARD
+from src.constants import BOARD_PNG, BOARD_LOCATION
 
 
 class Board:
@@ -25,12 +25,12 @@ class Board:
     def get_tile(self, x, y):
         return self.__grid[x][y]
 
-    def draw(self, game_display):
+    def draw(self, display):
         """Draws the board and every tile on it to the screen
 
-        :param game_display: main pygame.surface.Surface representing the whole game window
+        :param display: Display object containing the main game window
         """
-        game_display.blit(pygame.image.load(BOARD), ((DISPLAY_WIDTH - 808) / 2, 0))
+        display.blit(BOARD_PNG, BOARD_LOCATION)
         for tile in sum(self.__grid, []):
             if tile is not None:
-                tile.draw(game_display)
+                tile.draw(display)

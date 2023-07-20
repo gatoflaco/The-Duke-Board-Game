@@ -5,28 +5,27 @@ Isaac Jung
 This module contains all code related to tiles that are placed on the board.
 """
 
-import pygame
-from src.constants import DISPLAY_WIDTH, BOARD_SIZE, PLAYER_COLORS, TILE_SIZE
+from pygame import SRCALPHA, Surface, transform
+from src.constants import BOARD_SIZE, BOARD_LOCATION, PLAYER_COLORS, TILE_PNGS, TILE_SIZE
 
 
-def highlight_locations(game_display, locations, highlight):
+def highlight_locations(display, locations, highlight):
     """Puts a low opacity highlight over tiles at the given locations.
 
     Used to show the player where a selected tile can take various actions.
     Different colors should be used for different types of actions.
 
-    :param game_display: main pygame.surface.Surface representing the whole game window
+    :param display: Display object containing the main game window
     :param locations: list of (x, y)-coordinates over which the given highlight should be drawn on the board
     :param highlight: pygame.color.Color to be used for highlighting
-    :return:
     """
     for location in locations:
-        shader = pygame.Surface((TILE_SIZE + 2, TILE_SIZE + 2))
+        shader = Surface((TILE_SIZE + 2, TILE_SIZE + 2))
         shader.fill(highlight)
         shader.set_alpha(5)
-        x = int((DISPLAY_WIDTH - BOARD_SIZE) / 2) + 4 + (TILE_SIZE + 6) * location[0]
+        x = BOARD_LOCATION + 4 + (TILE_SIZE + 6) * location[0]
         y = BOARD_SIZE - (TILE_SIZE + 6 + (TILE_SIZE + 6) * location[1])
-        game_display.blit(shader, (x, y))
+        display.blit(shader, (x, y))
 
 
 class Tile:
@@ -45,9 +44,9 @@ class Tile:
 
     def __init__(self, name, coords=(0, 0)):
         self._name = name
-        self._image = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)  # creates transparent background
+        self._image = Surface((TILE_SIZE, TILE_SIZE), SRCALPHA)  # creates transparent background
         if name != '':
-            self._png = pygame.image.load('assets/pngs/tiles/' + self._name + '.png')
+            self._png = TILE_PNGS[self._name]
             self._image.blit(self._png, (0, 0))  # draw png onto surface, cropping off extra pixels
         self._coords = coords
         self._player_side = 0  # represents that the tile does not belong to any player
@@ -64,20 +63,24 @@ class Tile:
     def get_player(self):
         return self._player_side
 
-    def draw(self, game_display):
+    def draw(self, display, x=None, y=None):
         """Draws the tile to the screen
 
-        :param game_display: main pygame.surface.Surface representing the whole game window
+        :param display: Display object containing the main game window
+        :param x: x-coordinate of pixel location on game window of upper left corner of tile
+        :param y: y-coordinate of pixel location on game window of upper left corner of tile
         """
-        x = int((DISPLAY_WIDTH - BOARD_SIZE) / 2) + 5 + (TILE_SIZE + 6) * self._coords[0]
-        y = BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self._coords[1])
+        if x is None:
+            x = BOARD_LOCATION[0] + 5 + (TILE_SIZE + 6) * self._coords[0]
+        if y is None:
+            y = BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self._coords[1])
         if self._player_side != 0:
-            bg = pygame.Surface((TILE_SIZE+2, TILE_SIZE+2))
+            bg = Surface((TILE_SIZE+2, TILE_SIZE+2))
             bg.fill(PLAYER_COLORS[self._player_side - 1])
-            bg_x = int((DISPLAY_WIDTH - BOARD_SIZE) / 2) + 4 + (TILE_SIZE + 6) * self._coords[0]
+            bg_x = BOARD_LOCATION[0] + 4 + (TILE_SIZE + 6) * self._coords[0]
             bg_y = BOARD_SIZE - (TILE_SIZE + 6 + (TILE_SIZE + 6) * self._coords[1])
-            game_display.blit(bg, (bg_x, bg_y))
-        game_display.blit(self._image, (x, y))
+            display.blit(bg, (bg_x, bg_y))
+        display.blit(self._image, (x, y))
 
 
 class Troop(Tile):
@@ -111,7 +114,7 @@ class Troop(Tile):
         super(Troop, self).__init__(name, coords)
         self._player_side = player_side
         if self._player_side == 2:
-            self._image = pygame.transform.rotate(self._image, 180)
+            self._image = transform.rotate(self._image, 180)
         self.__in_play = in_play
         self.__is_captured = False
         self.__side = 1
@@ -134,9 +137,9 @@ class Troop(Tile):
     def flip(self):
         if self.__side == 1:  # on side 1, about to flip to side 2
             self.__side = 2
-            self._image.blit(self._png, (-TILE_SIZE, 0))
+            self._image.blit(self._png, (-TILE_SIZE, 0))  # take the base spritesheet and shift it into place
         else:
             self.__side = 1
             self._image.blit(self._png, (0, 0))
         if self._player_side == 2:
-            self._image = pygame.transform.rotate(self._image, 180)
+            self._image = transform.rotate(self._image, 180)

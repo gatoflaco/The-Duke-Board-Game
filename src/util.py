@@ -80,22 +80,25 @@ def path_is_open(board, i, j, dx, dy):
     return all(tile is None for tile in [board.get_tile(i-step*it_x, j-step*it_y) for step in range(1, num_tiles)])
 
 
-def get_attacks(choices):
+def get_attacks(choices, tile=None):
     """Determines all locations under attack according to the given choices.
 
     :param choices: special dict called "choices", whose format is documented in docs/choice_formats.txt
+    :param tile: Tile object of a tile whose attacks the caller is interested in
     :return: set of (x, y)-coordinate locations at which the given choices dict indicates an attack
     """
-    enemy_attacks = set()
+    attacks = set()
     for x, y in choices['act']:
+        if tile is not None and (x, y) != tile.get_coords():
+            continue
         for mov_loc in choices['act'][(x, y)]['moves']:
-            enemy_attacks.add(mov_loc)
+            attacks.add(mov_loc)
         for str_loc in choices['act'][(x, y)]['strikes']:
-            enemy_attacks.add(str_loc)
+            attacks.add(str_loc)
         for teammate_loc in choices['act'][(x, y)]['commands']:
             for cmd_loc in choices['act'][(x, y)]['commands'][teammate_loc]:
-                enemy_attacks.add(cmd_loc)
-    return enemy_attacks
+                attacks.add(cmd_loc)
+    return attacks
 
 
 def has_no_valid_choices(choices):

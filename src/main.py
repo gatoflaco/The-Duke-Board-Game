@@ -8,12 +8,14 @@ This module contains the main logic for starting up the game.
 
 import pygame
 from src.game import Game
+from src.display import Display
 from src.constants import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_WINDOW_ICON, GAME_WINDOW_TITLE
 
 pygame.init()
-
-game_display = pygame.display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))
-pygame.display.set_icon(pygame.image.load(GAME_WINDOW_ICON))
+display = Display(DISPLAY_WIDTH, DISPLAY_HEIGHT)
+display.toggle_theme()
+display.draw_bg()
+pygame.display.set_icon(GAME_WINDOW_ICON)
 pygame.display.set_caption(GAME_WINDOW_TITLE)
 clock = pygame.time.Clock()
 
@@ -25,7 +27,7 @@ while not crashed:
         if event.type == pygame.QUIT:
             crashed = True
 
-    game.update(game_display)
+    game.update(display)
 
     pygame.display.update()
     clock.tick(60)

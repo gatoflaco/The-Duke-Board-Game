@@ -7,7 +7,7 @@ This module contains all the code related to playing a game of The Duke.
 
 from src.board import Board
 # from src.player import Player
-from src.ai import AI
+from src.ai import Difficulty, AI
 from src.tile import Troop
 from src.util import *
 from src.constants import TROOP_MOVEMENTS
@@ -25,8 +25,8 @@ class Game:
     def __init__(self):
         self.__board = Board()
         self.__turn = 0
-        player1 = AI(1, self)
-        player2 = AI(2, self)
+        player1 = AI(1, self, Difficulty.HARD)
+        player2 = AI(2, self, Difficulty.BEGINNER)
         self.__players = (player1, player2)
         self.__actions_taken = {}  # will hold (self.__turn: "choice") key-value pairs
         self.__winner = None
@@ -45,13 +45,14 @@ class Game:
     def get_players(self):
         return self.__players
 
-    def update(self, game_display):
+    def update(self, display):
         """Draws the current game state to the screen.
 
-        :param game_display: main pygame.surface.Surface representing the whole game window
+        :param display: Display object containing the main game window
         """
-        game_display.fill((255, 255, 255))
-        self.__board.draw(game_display)
+        self.__board.draw(display)
+        for player in self.__players:
+            player.update(display)
 
     def take_turn(self):
         """Main gameplay loop.
@@ -66,15 +67,17 @@ class Game:
         self.make_choice(player, player.take_turn())  # update the board based on player's choice
         player.set_check(False)  # must not be in check at this point
         player_choices = self.get_choices(player)  # recalculate player's allowed moves
+        #print('\nPlayer', player.get_side(), 'choices:', player_choices)
         player.update_choices(player_choices)
         player_attacks = get_attacks(player_choices)
         stalemate = True
-        if len(player_choices['act']) > 1 or player.has_tiles_in_bag():
+        if player_attacks != get_attacks(player_choices, player.get_duke()) or player.has_tiles_in_bag():
             stalemate = False
         for other in self.__players:  # next, we should see what effect the move had on the opponent(s)
             if player == other:
                 continue
             other_choices = self.get_choices(other)  # recalculate their allowed moves
+            #print('Player', other.get_side(), 'choices:', other_choices)
             if has_no_valid_choices(other_choices):
                 self.__winner = player
                 print('Checkmate! Player', player.get_side(), 'wins!')
@@ -82,7 +85,8 @@ class Game:
             other.update_choices(other_choices)
             if other.get_duke().get_coords() in player_attacks:
                 other.set_check(True)
-            if stalemate and (len(other_choices['act']) > 1 or other.has_tiles_in_bag()):
+            if stalemate and (get_attacks(other_choices) != get_attacks(other_choices, other.get_duke())
+                              or other.has_tiles_in_bag()):
                 stalemate = False
         if stalemate:
             self.__winner = -1

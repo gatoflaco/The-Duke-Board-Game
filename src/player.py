@@ -39,7 +39,7 @@ class Player:
             bag_troop_names.remove(troop_name)
         bag_troops = [Troop(troop_name, self._side) for troop_name in bag_troop_names]
         self._in_play = []
-        self._bag = Bag(bag_troops)
+        self._bag = Bag(bag_troops, side)
         self._captured = []
         self._duke = None
         self._in_check = False
@@ -103,6 +103,9 @@ class Player:
     def get_choices(self):
         return self._choices
 
+    def update(self, display):
+        self._bag.draw(display)
+
     def take_turn(self):
         """Handles the logic of getting user input on what to do for the player's turn.
 
@@ -117,6 +120,7 @@ class Player:
         highlighted2 = []  # filled out when a highlighted1 location is clicked
         highlighted3 = []  # filled out only when a clicked highlighted2 location is a teammate to command
         # TODO: get user input on what they want to do instead of hard coding
+
         if len(self._choices['pull']) != 0 and randrange(0, 10) < 2:
             x, y = self._choices['pull'][0]
             tile = self.play_new_troop_tile(x, y)
