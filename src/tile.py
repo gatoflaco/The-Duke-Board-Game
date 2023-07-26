@@ -51,16 +51,16 @@ class Tile:
         self._coords = coords
         self._player_side = 0  # represents that the tile does not belong to any player
 
-    def get_name(self):
+    @property
+    def name(self):
         return self._name
 
-    def get_image(self):
-        return self._image
-
-    def get_coords(self):
+    @property
+    def coords(self):
         return self._coords
 
-    def get_player(self):
+    @property
+    def player_side(self):
         return self._player_side
 
     def draw(self, display, x=None, y=None):
@@ -75,10 +75,10 @@ class Tile:
         if y is None:
             y = BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self._coords[1])
         if self._player_side != 0:
-            bg = Surface((TILE_SIZE+2, TILE_SIZE+2))
+            bg = Surface((TILE_SIZE + 4, TILE_SIZE + 4))
             bg.fill(PLAYER_COLORS[self._player_side - 1])
-            bg_x = BOARD_LOCATION[0] + 4 + (TILE_SIZE + 6) * self._coords[0]
-            bg_y = BOARD_SIZE - (TILE_SIZE + 6 + (TILE_SIZE + 6) * self._coords[1])
+            bg_x = BOARD_LOCATION[0] + 3 + (TILE_SIZE + 6) * self._coords[0]
+            bg_y = BOARD_SIZE - (TILE_SIZE + 7 + (TILE_SIZE + 6) * self._coords[1])
             display.blit(bg, (bg_x, bg_y))
         display.blit(self._image, (x, y))
 
@@ -122,10 +122,19 @@ class Troop(Tile):
     def set_in_play(self, in_play=True):
         self.__in_play = in_play
 
+    @property
+    def is_in_play(self):
+        return self.__in_play
+
     def set_captured(self, is_captured=True):
         self.__is_captured = is_captured
 
-    def get_side(self):
+    @property
+    def is_captured(self):
+        return self.__is_captured
+
+    @property
+    def side(self):
         return self.__side
 
     def move(self, x, y):

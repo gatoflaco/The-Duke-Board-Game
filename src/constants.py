@@ -18,16 +18,21 @@ TEXT_COLOR_LIGHT_MODE = Color(15, 15, 15)
 BG_COLOR_DARK_MODE = Color(56, 52, 52)
 TEXT_COLOR_DARK_MODE = Color(215, 215, 225)
 TEXT_FONT_SIZE = 16
+TEXT_BUFFER = 4
 
 # board constants
 BOARD_PNG = image.load('assets/pngs/board.png')  # png for the game board, note that dimensions must be square
+BOARD_DARK_PNG = image.load('assets/pngs/board_dark.png')  # for dark mode theme
 BOARD_SIZE = BOARD_PNG.get_width()  # width and height of the board
 BOARD_LOCATION = ((DISPLAY_WIDTH - BOARD_SIZE) // 2, 0)  # pixel position for upper left corner of BOARD_PNG
+BOARD_BUFFER = 5
+FILES = ['A', 'B', 'C', 'D', 'E', 'F']
+RANKS = ['1', '2', '3', '4', '5', '6']
 
 # player constants
 PLAYER_COLORS = [  # list of colors associated with each player
     Color(100, 150, 255),  # blue
-    Color(255, 90, 100)  # red
+    Color(255, 10, 10)  # red
 ]
 
 # tile constants

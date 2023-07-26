@@ -6,6 +6,8 @@ Code adapted from https://pythonprogramming.net/.
 This module contains the main logic for starting up the game.
 """
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame
 from src.game import Game
 from src.display import Display
@@ -31,8 +33,8 @@ while not crashed:
 
     pygame.display.update()
     clock.tick(60)
-    if not game.is_finished():
-        clock.tick(10)  # purposely delay, so that we can see the next line happen live
+    if not game.is_finished and not game.debug_flag:
+        # clock.tick(1)  # purposely delay, so that we can see the next line happen live
         game.take_turn()
 
 pygame.quit()

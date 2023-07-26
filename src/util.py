@@ -31,23 +31,23 @@ def convert_file_and_rank_to_coordinates(file, rank, player_side=1):
 def tile_is_open_or_enemy(tile, player):
     """Checks if a "destination" tile is either empty or occupied by an enemy tile.
 
-    :param tile: Tile object being inspected, could be None or a Tile object with a .get_player() method (Troop)
+    :param tile: Tile object being inspected, could be None or a Tile object with a .player_side() method (Troop)
     :param player: Player object representing the player considering this tile, needed to decide if tile is an "enemy"
     :return: boolean representing whether the tile is None or an enemy - True if so, False if not
     """
 
-    return tile is None or tile.get_player() != player.get_side()
+    return tile is None or tile.player_side != player.side
 
 
 def tile_is_enemy(tile, player):
     """Checks that a "destination" tile is specifically occupied by an enemy tile.
 
-    :param tile: Tile object being inspected, could be None or a Tile object with a .get_player() method (Troop)
+    :param tile: Tile object being inspected, could be None or a Tile object with a .player_side() method (Troop)
     :param player: Player object representing the player considering this tile, needed to decide if tile is an "enemy"
     :return: boolean representing whether the tile is an enemy - True if so, False if not
     """
 
-    return tile is not None and tile.get_player() != player.get_side()
+    return tile is not None and tile.player_side != player.side
 
 
 def path_is_open(board, i, j, dx, dy):
@@ -89,7 +89,7 @@ def get_attacks(choices, tile=None):
     """
     attacks = set()
     for x, y in choices['act']:
-        if tile is not None and (x, y) != tile.get_coords():
+        if tile is not None and (x, y) != tile.coords:
             continue
         for mov_loc in choices['act'][(x, y)]['moves']:
             attacks.add(mov_loc)
@@ -118,3 +118,23 @@ def has_no_valid_choices(choices):
             if len(choices['act'][troop_loc]['commands'][teammate_loc]) != 0:
                 return False
     return True
+
+def check_stalemate_by_counter(counter):
+    """Handles the check for stalemate by the 50 turn rule.
+
+    The 50 turn rule says that if no tiles were played or captured for 50 consecutive turns, the game is automatically
+    ended as a draw.
+    The caller is responsible for maintaining the counter.
+    Note that because turns increment per player, this function must use 100 as the upper limit. The 50 turn rule
+    normally considers a cycle of both players taking their action to be a single turn.
+
+    :param counter: integer representing the current count of consecutive turns meeting the stalemate condition
+    :return: boolean representing whether a stalemate has occurred - True if so, False if not
+    """
+    if counter > 100:
+        return True
+    elif counter == 81 or counter == 82:
+        print('Looks a LOT like stalemate....')
+    elif counter == 41 or counter == 42:
+        print('Looks it might be stalemate?')
+    return False

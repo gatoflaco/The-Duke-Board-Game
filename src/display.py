@@ -8,13 +8,17 @@ This module contains all the code related to the UI.
 from pygame import display, font, Surface
 from src.constants import (BG_COLOR_LIGHT_MODE, TEXT_COLOR_LIGHT_MODE, BG_COLOR_DARK_MODE, TEXT_COLOR_DARK_MODE,
                            TEXT_FONT_SIZE)
+from enum import Enum
 
 
-class Theme:
+class Theme(Enum):
     """Enum for light/dark mode themes
     """
     LIGHT = 0
     DARK = 1
+
+    def __invert__(self):
+        return Theme(self.value ^ 1)
 
 
 class Display:
@@ -42,7 +46,11 @@ class Display:
         self.__theme = theme
 
     def toggle_theme(self):
-        self.__theme ^= 1
+        self.__theme = ~self.__theme
+
+    @property
+    def theme(self):
+        return self.__theme
 
     def draw_bg(self):
         self.__game_display.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)

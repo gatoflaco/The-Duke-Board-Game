@@ -30,7 +30,7 @@ The value of 'act' is itself a dict, which contains (x, y)-coordinates as keys a
     There will be an (x, y)-coordinate for each troop tile the player has on the board.
         The (x, y)-coordinate represents that troop tile's location on the board.
     An "action" is a dict that will be described later.
-Initially, this dict is created by the get_choices() function in game.py.
+Initially, this dict is created by the choices() function in game.py.
 It is created containing an empty list for 'pull' and an empty dict for 'act'.
 It is filled out by calling helper functions.
 When finished, 'pull' may still be an empty list if the game found no valid ways to pull a new tile.

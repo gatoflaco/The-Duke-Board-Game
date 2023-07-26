@@ -7,7 +7,8 @@ This module contains all code related to players in a given game of the Duke.
 
 from src.bag import Bag
 from src.tile import Troop
-from src.constants import TILE_TYPES, STARTING_TROOPS
+from src.constants import (DISPLAY_WIDTH, DISPLAY_HEIGHT, TEXT_FONT_SIZE, TEXT_BUFFER, BOARD_SIZE, BOARD_LOCATION,
+                           TILE_TYPES, STARTING_TROOPS, BAG_SIZE, BAG_BUFFER)
 from random import randrange, shuffle
 
 
@@ -29,8 +30,9 @@ class Player:
         Must be unique from the other player(s) in the game.
     """
 
-    def __init__(self, side):
+    def __init__(self, side, name=''):
         self._side = side
+        self._name = name
         all_troop_names = []
         for troop_name, count in TILE_TYPES['troop'].items():  # generate a list of all troop names with duplicates
             all_troop_names.extend([troop_name] * count)
@@ -67,17 +69,24 @@ class Player:
                 self._duke = self._in_play[-1]  # the most recently added is the Duke
             i += 1
 
-    def get_side(self):
+    @property
+    def side(self):
         return self._side
+
+    @property
+    def name(self):
+        return self._name
 
     def set_tiles_in_play(self, in_play):
         self._in_play = in_play
 
-    def get_tiles_in_play(self):
+    @property
+    def tiles_in_play(self):
         return self._in_play
 
+    @property
     def has_tiles_in_bag(self):
-        return self._bag.num_tiles_remaining() != 0
+        return self._bag.size != 0
 
     def capture(self, tile):
         self._captured.append(tile)
@@ -88,22 +97,43 @@ class Player:
         tile.set_captured(False)
         return tile
 
-    def get_duke(self):
+    @property
+    def duke(self):
         return self._duke
 
     def set_check(self, in_check=True):
         self._in_check = in_check
 
+    @property
     def is_in_check(self):
         return self._in_check
 
     def update_choices(self, choices):
         self._choices = choices
+        if len(self._choices['pull']) > 0:
+            self._bag.set_state(Bag.SELECTABLE)
+        else:
+            self._bag.set_state(Bag.UNSELECTABLE)
 
-    def get_choices(self):
+    @property
+    def choices(self):
         return self._choices
 
     def update(self, display):
+        if self._side == 1:
+            display.write('Player 1',
+                          (BOARD_LOCATION[0] + BOARD_SIZE + (DISPLAY_WIDTH - BOARD_SIZE) // 2 - BAG_BUFFER,
+                           DISPLAY_HEIGHT - BAG_SIZE - 2 * BAG_BUFFER - 4 * TEXT_FONT_SIZE), True)
+            display.write(self._name,
+                          (BOARD_LOCATION[0] + BOARD_SIZE + (DISPLAY_WIDTH - BOARD_SIZE) // 2 - BAG_BUFFER,
+                           DISPLAY_HEIGHT - BAG_SIZE - 2 * BAG_BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
+        else:
+            display.write('Player 2',
+                          (BOARD_LOCATION[0] - (DISPLAY_WIDTH - BOARD_SIZE) // 2 + BAG_BUFFER,
+                           BAG_BUFFER + BAG_SIZE + BAG_BUFFER + 2 * TEXT_FONT_SIZE))
+            display.write(self._name,
+                          (BOARD_LOCATION[0] - (DISPLAY_WIDTH - BOARD_SIZE) // 2 + BAG_BUFFER,
+                           BAG_BUFFER + BAG_SIZE + BAG_BUFFER + 3 * TEXT_FONT_SIZE + TEXT_BUFFER))
         self._bag.draw(display)
 
     def take_turn(self):
@@ -126,7 +156,7 @@ class Player:
             tile = self.play_new_troop_tile(x, y)
             return {
                 'action_type': 'pull',
-                'src_location': tile.get_coords(),
+                'src_location': tile.coords,
                 'tile': tile
             }
         else:  # MUST be at least one valid 'act' choice (otherwise game would have stopped due to checkmate)
@@ -161,7 +191,7 @@ class Player:
             tile = self.play_new_troop_tile(x, y)
             return {
                 'action_type': 'pull',
-                'src_location': tile.get_coords(),
+                'src_location': tile.coords,
                 'tile': tile
             }
 
@@ -190,14 +220,14 @@ class Player:
             than it having been captured. In this case, override the default value of True to be False.
         :return: Troop object of the troop removed from play, or None if no troop could be found at (x, y)
         """
-        tile = self.get_tile_with_coords(x, y)
+        tile = self._get_tile_with_coords(x, y)
         if tile is not None:
             self._in_play.remove(tile)
             tile.set_in_play(False)
             tile.set_captured(is_captured)
         return tile
 
-    def get_tile_with_coords(self, x, y):
+    def _get_tile_with_coords(self, x, y):
         """Searches for the troop in this player's self._in_play list with coordinates (x, y).
 
         :param x: x-coordinate of location being searched
@@ -205,7 +235,7 @@ class Player:
         :return: Troop object of the troop found at (x, y), or None if no troop could be found
         """
         for troop_tile in self._in_play:
-            i, j = troop_tile.get_coords()
+            i, j = troop_tile.coords
             if i == x and j == y:
                 return troop_tile
         return None  # not found

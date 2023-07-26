@@ -4,15 +4,18 @@ Isaac Jung
 
 This module contains code implementing the AI for vs CPU games.
 """
+import random
 
 from src.player import Player
 from src.tile import Troop
 from src.util import *
 from src.constants import STARTING_TROOPS, TROOP_WEIGHTS
-from random import randrange, shuffle
+from enum import Enum
+from random import randrange, seed, shuffle
+from sys import maxsize
 
 
-class Difficulty:
+class Difficulty(Enum):
     """Serves as a sort of enum for the difficulty levels the AI can have.
 
     The beginner AI does not think at all, and will just make random moves.
@@ -32,6 +35,39 @@ class Difficulty:
     HARD = 3
     EXPERT = 4
 
+    def __lt__(self, other):
+        if isinstance(other, Difficulty):
+            return self.value < other.value
+        raise NotImplementedError
+
+    def __le__(self, other):
+        if isinstance(other, Difficulty):
+            return self.value <= other.value
+        raise NotImplementedError
+
+    def __gt__(self, other):
+        if isinstance(other, Difficulty):
+            return self.value > other.value
+        raise NotImplementedError
+
+    def __ge__(self, other):
+        if isinstance(other, Difficulty):
+            return self.value >= other.value
+        raise NotImplementedError
+
+    def __str__(self):
+        if self.value == 0:
+            return 'BEGINNER'
+        if self.value == 1:
+            return 'EASY'
+        if self.value == 2:
+            return 'NORMAL'
+        if self.value == 3:
+            return 'HARD'
+        if self.value == 4:
+            return 'EXPERT'
+        return ''
+
 
 class AI(Player):
     """Special type of Player that is not controlled by user input, but algorithmic decision-making instead.
@@ -47,12 +83,17 @@ class AI(Player):
         Needed so that the AI can ask the game to carry out some computations for it, such as pretend moves.
     difficulty : Difficulty attribute (optional; Difficulty.NORMAL by default)
         Difficulty level of the AI. Affects how much thought goes into move scoring.
+    rng_seed : int (optional; random.randrange(random.maxsize) by default)
+        Seed used for randomness. In theory, if two AI played each other with the same seeds, the game would play out
+        exactly the same every time.
     """
 
-    def __init__(self, side, game, difficulty=Difficulty.NORMAL):
-        super(AI, self).__init__(side)
+    def __init__(self, side, game, difficulty=Difficulty.NORMAL, rng_seed=randrange(maxsize)):
+        super(AI, self).__init__(side, str(difficulty) + ' CPU')
         self.__game = game  # AI will need access to game's functions like make_choice() and undo_choice() for scoring
         self.__difficulty = difficulty
+        self.__seed = rng_seed
+        seed(self.__seed)
 
     def setup_phase(self):
         """Runs the setup phase for an AI.
@@ -75,6 +116,10 @@ class AI(Player):
             if troop_name == 'Duke':
                 continue
             self._in_play.append(Troop(troop_name, self._side, other_coords.pop(), True))
+
+    @property
+    def seed(self):
+        return self.__seed
 
     def take_turn(self):
         """Handles the logic of taking AI's turn.
@@ -185,7 +230,7 @@ class AI(Player):
         :return: score for the given choice
         """
         score = 0
-        board = self.__game.get_board()
+        board = self.__game.board
         x, y = choice['src_location']
         if choice['action_type'] == 'pull':
             if self.__difficulty > Difficulty.EASY:
@@ -200,7 +245,7 @@ class AI(Player):
             if tile_is_enemy(dst_tile, self):
                 score += 50  # prefer capturing enemy tiles
                 if self.__difficulty > Difficulty.EASY:
-                    score += TROOP_WEIGHTS[dst_tile.get_name()][str(dst_tile.get_side())]
+                    score += TROOP_WEIGHTS[dst_tile.name][str(dst_tile.side)]
             if self.__difficulty > Difficulty.EASY:
                 score += self.__consider_trapped_duke(x, y, i, j)
             if self.__difficulty > Difficulty.NORMAL:
@@ -210,7 +255,7 @@ class AI(Player):
             if self.__difficulty > Difficulty.EASY:
                 i, j = choice['str_location']
                 str_tile = board.get_tile(i, j)
-                score += TROOP_WEIGHTS[str_tile.get_name()][str(str_tile.get_side())]
+                score += TROOP_WEIGHTS[str_tile.name][str(str_tile.side)]
             if self.__difficulty > Difficulty.NORMAL:
                 pass  # call function to look at what src tile would flip to (if it becomes useless, subtract score)
         elif choice['action_type'] == 'cmd':
@@ -219,7 +264,7 @@ class AI(Player):
             if tile_is_enemy(dst_tile, self):
                 score += 50  # prefer capturing enemy tiles
                 if self.__difficulty > Difficulty.EASY:
-                    score += TROOP_WEIGHTS[dst_tile.get_name()][str(dst_tile.get_side())]
+                    score += TROOP_WEIGHTS[dst_tile.name][str(dst_tile.side)]
             if self.__difficulty > Difficulty.EASY:
                 score += self.__consider_trapped_duke(x, y, i, j)
             if self.__difficulty > Difficulty.NORMAL:
@@ -239,23 +284,23 @@ class AI(Player):
             larger negative score means Duke gets trapped worse, 0 means Duke is not trapped at all
         """
         score = 0
-        duke_x, duke_y = self._duke.get_coords()
+        duke_x, duke_y = self._duke.coords
         if duke_x == x and duke_y == y:  # moving tile IS the Duke
             return 0  # Duke cannot trap itself lol
 
         # first, consider improving score if tile is starting in the Duke's way
-        if self._duke.get_side() == 1 and y == duke_y:  # if tile is currently in same rank as Duke on side 1
+        if self._duke.side == 1 and y == duke_y:  # if tile is currently in same rank as Duke on side 1
             distance = abs(x - duke_x) - 1  # e.g., when directly adjacent, consider distance to be 0
             score += (100 - distance * 20)  # the closer to the Duke, the more trapped, so add more
-        elif self._duke.get_side() == 2 and x == duke_x:  # if tile is currently in same file as Duke on side 2
+        elif self._duke.side == 2 and x == duke_x:  # if tile is currently in same file as Duke on side 2
             distance = abs(y - duke_y) - 1
             score += (100 - distance * 20)
 
         # next, consider worsening score if tile would move into the Duke's way
-        if self._duke.get_side() == 1 and j == duke_y:  # if move would end in same rank as Duke on side 1
+        if self._duke.side == 1 and j == duke_y:  # if move would end in same rank as Duke on side 1
             distance = abs(i - duke_x) - 1
             score -= (100 - distance * 20)  # the closer to the Duke, the more trapped, so subtract more
-        elif self._duke.get_side() == 2 and i == duke_x:  # if move would end in same file as Duke on side 2
+        elif self._duke.side == 2 and i == duke_x:  # if move would end in same file as Duke on side 2
             distance = abs(j - duke_y) - 1
             score -= (100 - distance * 20)
         return score
@@ -267,20 +312,20 @@ class AI(Player):
         :return: score for the given choice
         """
         score = 0
-        players = self.__game.get_players()
+        players = self.__game.players
         cur_in_play = []
         for p in players:  # save some states before they get modified
-            cur_in_play.append(p.get_tiles_in_play().copy())
-        self.__game.make_choice(self, choice)  # literally make the move
+            cur_in_play.append(p.tiles_in_play.copy())
+        self.__game.make_choice(self, choice, True)  # literally make the move
 
-        ai_choices = self.__game.get_choices(self, False)  # recalculate the allowed moves for the AI
+        ai_choices = self.__game.calculate_choices(self, False)  # recalculate the allowed moves for the AI
         ai_attacks = get_attacks(ai_choices)  # consider what AI would then be able to attack
         # TODO: do something with knowledge of AI attacks upon making the move
 
         all_enemy_attacks = set()  # consider what enemies would then be able to attack
         for other in players:  # recalculate the allowed moves for the opponent(s)
             if self != other:
-                other_choices = self.__game.get_choices(other, False)
+                other_choices = self.__game.calculate_choices(other, False)
                 all_enemy_attacks = all_enemy_attacks.union(get_attacks(other_choices))
         # TODO: do something with knowledge of enemy attacks upon making the move
 

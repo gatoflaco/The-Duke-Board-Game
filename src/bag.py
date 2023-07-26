@@ -62,17 +62,39 @@ class Bag:
         new_troop = random.choice(self.__tiles)
         self.__tiles.remove(new_troop)
         if len(self.__tiles) == 0:
-            self.__state = Bag.EMPTY
-            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
-            self.__image.blit(BAG_PNG, (-BAG_SIZE, -BAG_SIZE))  # draw png onto surface, cropping off extra pixels
+            self.set_state(Bag.EMPTY)
         new_troop.set_in_play(True)
         return new_troop
 
-    def num_tiles_remaining(self):
+    @property
+    def size(self):
         return len(self.__tiles)
 
     def set_hovered(self, hovered=True):
         self.__hovered = hovered
+
+    def set_state(self, state):
+        if state == self.__state:
+            return  # nothing to do
+        if state == Bag.SELECTABLE:
+            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
+            self.__image.blit(BAG_PNG, (0, 0))
+        elif state == Bag.SELECTED:
+            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
+            self.__image.blit(BAG_PNG, (-BAG_SIZE, 0))
+        elif state == Bag.UNSELECTABLE:
+            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
+            self.__image.blit(BAG_PNG, (0, -BAG_SIZE))
+        elif state == Bag.EMPTY:
+            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
+            self.__image.blit(BAG_PNG, (-BAG_SIZE, -BAG_SIZE))
+        else:
+            return  # invalid state
+        self.__state = state
+
+    @property
+    def state(self):
+        return self.__state
 
     def draw(self, display, x=None, y=None):
         """Draws the bag to the screen
