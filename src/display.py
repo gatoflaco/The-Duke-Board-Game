@@ -5,9 +5,9 @@ Isaac Jung
 This module contains all the code related to the UI.
 """
 
-from pygame import display, font, Surface
-from src.constants import (BG_COLOR_LIGHT_MODE, TEXT_COLOR_LIGHT_MODE, BG_COLOR_DARK_MODE, TEXT_COLOR_DARK_MODE,
-                           TEXT_FONT_SIZE)
+from pygame import display, font, mouse, SRCALPHA, Surface
+from src.constants import (THEME_TOGGLE_PNG, THEME_TOGGLE_WIDTH, THEME_TOGGLE_HEIGHT, THEME_BUFFER, BG_COLOR_LIGHT_MODE,
+                           TEXT_COLOR_LIGHT_MODE, BG_COLOR_DARK_MODE, TEXT_COLOR_DARK_MODE, TEXT_FONT_SIZE)
 from enum import Enum
 
 
@@ -44,13 +44,33 @@ class Display:
         if text_font is not None and isinstance(text_font, font.Font):
             self.__font = text_font
         self.__theme = theme
+        self.__theme_toggler_hovered = False
+        self.__image = None
+        self.draw_bg()
+        self.draw_theme_toggle()
 
     def toggle_theme(self):
         self.__theme = ~self.__theme
+        self.draw_bg()
+        self.draw_theme_toggle()
 
     @property
     def theme(self):
         return self.__theme
+
+    def draw_theme_toggle(self):
+        self.__image = Surface((THEME_TOGGLE_WIDTH, THEME_TOGGLE_HEIGHT), SRCALPHA)  # creates transparent background
+        if not self.__theme_toggler_hovered:
+            if self.__theme == Theme.LIGHT:
+                self.__image.blit(THEME_TOGGLE_PNG, (0, 0))  # draw png onto surface, cropping off extra pixels
+            elif self.__theme == Theme.DARK:
+                self.__image.blit(THEME_TOGGLE_PNG, (0, -THEME_TOGGLE_HEIGHT))
+        else:
+            if self.__theme == Theme.LIGHT:
+                self.__image.blit(THEME_TOGGLE_PNG, (-THEME_TOGGLE_WIDTH, 0))
+            elif self.__theme == Theme.DARK:
+                self.__image.blit(THEME_TOGGLE_PNG, (-THEME_TOGGLE_WIDTH, -THEME_TOGGLE_HEIGHT))
+        self.blit(self.__image, (self.__game_display.get_width() - THEME_TOGGLE_WIDTH - THEME_BUFFER, 0))
 
     def draw_bg(self):
         self.__game_display.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
@@ -92,3 +112,18 @@ class Display:
         bg.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
         self.blit(bg, location)
         self.blit(surface, location)
+
+    @property
+    def theme_toggle_hovered(self, x=None, y=None):
+        if x is None or y is None:
+            x, y = mouse.get_pos()
+        return self.__image.get_rect().collidepoint(
+            (x - (self.__game_display.get_width() - THEME_TOGGLE_WIDTH - THEME_BUFFER), y))
+
+    def handle_theme_toggle_hovered(self):
+        self.__theme_toggler_hovered = True
+        self.draw_theme_toggle()
+
+    def handle_theme_toggle_unhovered(self):
+        self.__theme_toggler_hovered = False
+        self.draw_theme_toggle()

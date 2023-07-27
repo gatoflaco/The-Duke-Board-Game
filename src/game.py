@@ -10,7 +10,7 @@ from src.board import Board
 from src.ai import Difficulty, AI
 from src.tile import Troop
 from src.util import *
-from src.constants import TROOP_MOVEMENTS
+from src.constants import CPU_BOUND_MUTEX, TROOP_MOVEMENTS
 from itertools import chain
 
 
@@ -73,33 +73,36 @@ class Game:
             2. carry out player decision on board
             3. recalculate current game state, including what both players can currently do, and if check/checkmate
         """
-        self.__turn += 1
-        player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
+        with CPU_BOUND_MUTEX:
+            print(self.__turn, '-->', self.__turn + 1)
+            self.__turn += 1
+            player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
         self.make_choice(player, player.take_turn())  # update the board based on player's choice
-        player.set_check(False)  # must not be in check at this point
-        if check_draw_by_counter(self.__non_meaningful_moves_counter):
-            return self.__end(0, '50 turns have gone by without any new pieces being pulled or captured.')
-        player.update_choices(self.calculate_choices(player))  # recalculate player's allowed moves
-        player_attacks = get_attacks(self.calculate_choices(player, False))  # don't consider Duke safety here
-        dead_position = True
-        if not self.__can_only_move_duke(player):
-            dead_position = False
-        for other in self.__players:  # next, we should see what effect the move had on the opponent(s)
-            if player == other:
-                continue
-            other_choices = self.calculate_choices(other)  # recalculate their allowed moves
-            if other.duke.coords in player_attacks:
-                other.set_check(True)
-            if has_no_valid_choices(other_choices):
-                if other.is_in_check:
-                    return self.__end(player.side, 'Player ' + str(player.side) + ' wins!')
-                else:
-                    return self.__end(0, 'Stalemate by player ' + str(other.side) + ' having no valid moves.')
-            other.update_choices(other_choices)
-            if dead_position and not self.__can_only_move_duke(other):
+        with CPU_BOUND_MUTEX:
+            player.set_check(False)  # must not be in check at this point
+            if check_draw_by_counter(self.__non_meaningful_moves_counter):
+                return self.__end(0, '50 turns have gone by without any new pieces being pulled or captured.')
+            player.update_choices(self.calculate_choices(player))  # recalculate player's allowed moves
+            player_attacks = get_attacks(self.calculate_choices(player, False))  # don't consider Duke safety here
+            dead_position = True
+            if not self.__can_only_move_duke(player):
                 dead_position = False
-        if dead_position:
-            self.__end(0, 'Dead position - neither player can checkmate.')
+            for other in self.__players:  # next, we should see what effect the move had on the opponent(s)
+                if player == other:
+                    continue
+                other_choices = self.calculate_choices(other)  # recalculate their allowed moves
+                if other.duke.coords in player_attacks:
+                    other.set_check(True)
+                if has_no_valid_choices(other_choices):
+                    if other.is_in_check:
+                        return self.__end(player.side, 'Player ' + str(player.side) + ' wins!')
+                    else:
+                        return self.__end(0, 'Stalemate by player ' + str(other.side) + ' having no valid moves.')
+                other.update_choices(other_choices)
+                if dead_position and not self.__can_only_move_duke(other):
+                    dead_position = False
+            if dead_position:
+                self.__end(0, 'Dead position - neither player can checkmate.')
 
     def calculate_choices(self, player, consider_duke_safety=True):
         """Determines everything a player can legally do, given the current board state.
@@ -298,7 +301,6 @@ class Game:
         :param considering: boolean that should be True if the choice is expected to be undone later
         """
         if choice['action_type'] == 'pull':
-
             self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], choice['tile'])
             if not considering:
                 self.__non_meaningful_moves_counter = 0  # pulling is a meaningful move

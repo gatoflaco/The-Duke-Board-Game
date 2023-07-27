@@ -80,6 +80,7 @@ class Tile:
             bg_x = BOARD_LOCATION[0] + 3 + (TILE_SIZE + 6) * self._coords[0]
             bg_y = BOARD_SIZE - (TILE_SIZE + 7 + (TILE_SIZE + 6) * self._coords[1])
             display.blit(bg, (bg_x, bg_y))
+        self._image.unlock()
         display.blit(self._image, (x, y))
 
 

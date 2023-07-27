@@ -78,22 +78,17 @@ class Bag:
         self.__hovered = hovered
 
     def set_state(self, state):
-        if state == self.__state:
+        if state == self.__state or state not in [Bag.SELECTABLE, Bag.SELECTED, Bag.UNSELECTABLE, Bag.EMPTY]:
             return  # nothing to do
+        self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
         if state == Bag.SELECTABLE:
-            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
             self.__image.blit(BAG_PNG, (0, 0))
         elif state == Bag.SELECTED:
-            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
             self.__image.blit(BAG_PNG, (-BAG_SIZE, 0))
         elif state == Bag.UNSELECTABLE:
-            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
             self.__image.blit(BAG_PNG, (0, -BAG_SIZE))
         elif state == Bag.EMPTY:
-            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
             self.__image.blit(BAG_PNG, (-BAG_SIZE, -BAG_SIZE))
-        else:
-            return  # invalid state
         self.__state = state
 
     @property
