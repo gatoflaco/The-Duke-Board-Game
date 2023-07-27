@@ -112,7 +112,7 @@ class Player:
         self._choices = choices
         if len(self._choices['pull']) > 0:
             self._bag.set_state(Bag.SELECTABLE)
-        else:
+        elif self._bag.state != Bag.EMPTY:
             self._bag.set_state(Bag.UNSELECTABLE)
 
     @property
@@ -195,16 +195,21 @@ class Player:
                 'tile': tile
             }
 
-    def play_new_troop_tile(self, x, y):
+    def play_new_troop_tile(self, x, y, tile=None):
         """Pulls a random troop from the bag and puts it into play at location (x, y).
 
         This function assumes that the caller first checks that the action is allowed.
 
         :param x: x-coordinate of location at which the new tile will be played
         :param y: y-coordinate of location at which the new tile will be played
-        :return: Troop object of the troop that got pulled from the bag
+        :param tile: Troop object of the Troop being played
+            In ordinary gameplay, you cannot choose what tile to pull. However, there are some circumstances, such as
+            when the AI tests what would happen if they pulled a specific piece, in which this optional parameter might
+            be used.
+        :return: Troop object of the troop that was played.
         """
-        tile = self._bag.pull()
+        if not isinstance(tile, Troop):
+            tile = self._bag.pull()
         tile.set_in_play()
         tile.move(x, y)
         self._in_play.append(tile)

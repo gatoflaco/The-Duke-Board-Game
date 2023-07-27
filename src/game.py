@@ -28,7 +28,7 @@ class Game:
         player1 = AI(1, self, Difficulty.HARD)
         player2 = AI(2, self, Difficulty.BEGINNER)
         self.__players = (player1, player2)
-        self.__actions_taken = {}  # will hold (self.__turn: "choice") key-value pairs
+        self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
         self.__non_meaningful_moves_counter = 0
         for player in self.__players:  # do some initial setup
@@ -41,6 +41,12 @@ class Game:
     @property
     def board(self):
         return self.__board
+
+    def increment_turn(self):
+        self.__turn += 1
+
+    def decrement_turn(self):
+        self.__turn -= 1
 
     @property
     def turn(self):
@@ -71,13 +77,13 @@ class Game:
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
         self.make_choice(player, player.take_turn())  # update the board based on player's choice
         player.set_check(False)  # must not be in check at this point
-        if check_stalemate_by_counter(self.__non_meaningful_moves_counter):
+        if check_draw_by_counter(self.__non_meaningful_moves_counter):
             return self.__end(0, '50 turns have gone by without any new pieces being pulled or captured.')
         player.update_choices(self.calculate_choices(player))  # recalculate player's allowed moves
         player_attacks = get_attacks(self.calculate_choices(player, False))  # don't consider Duke safety here
-        stalemate = True
+        dead_position = True
         if not self.__can_only_move_duke(player):
-            stalemate = False
+            dead_position = False
         for other in self.__players:  # next, we should see what effect the move had on the opponent(s)
             if player == other:
                 continue
@@ -90,9 +96,9 @@ class Game:
                 else:
                     return self.__end(0, 'Stalemate by player ' + str(other.side) + ' having no valid moves.')
             other.update_choices(other_choices)
-            if stalemate and not self.__can_only_move_duke(other):
-                stalemate = False
-        if stalemate:
+            if dead_position and not self.__can_only_move_duke(other):
+                dead_position = False
+        if dead_position:
             self.__end(0, 'Dead position - neither player can checkmate.')
 
     def calculate_choices(self, player, consider_duke_safety=True):
@@ -292,6 +298,7 @@ class Game:
         :param considering: boolean that should be True if the choice is expected to be undone later
         """
         if choice['action_type'] == 'pull':
+
             self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], choice['tile'])
             if not considering:
                 self.__non_meaningful_moves_counter = 0  # pulling is a meaningful move
@@ -307,9 +314,6 @@ class Game:
                     choice['tile'] = dst_tile
                     if not considering:
                         self.__non_meaningful_moves_counter = 0  # capturing is a meaningful move
-                        if enemy_player.duke.is_captured:
-                            print(choice)
-                            return False
                 elif not considering:
                     self.__non_meaningful_moves_counter += 1  # movement without capturing is not considered meaningful
                 if choice['action_type'] == 'mov':
@@ -329,12 +333,10 @@ class Game:
                 choice['tile'] = str_tile
                 if not considering:
                     self.__non_meaningful_moves_counter = 0  # striking (and capturing) is a meaningful move
-                    if enemy_player.duke.is_captured:
-                        print(choice)
-                        return False
                 src_tile.flip()
                 self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], src_tile)
-        self.__actions_taken[self.__turn] = choice  # log the choice made on this turn
+                self.__board.set_tile(choice['str_location'][0], choice['str_location'][1], None)  # funny story here
+        self.__actions_taken.append(choice)  # log the choice made on this turn
         return True
 
     def undo_choice(self, player):
@@ -348,7 +350,7 @@ class Game:
 
         :param player: Player object of the player who made the last move
         """
-        choice = self.__actions_taken.pop(self.__turn)
+        choice = self.__actions_taken.pop()
         if choice['action_type'] == 'pull':
             self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], None)
         else:
@@ -466,9 +468,6 @@ class Game:
         """
         self.__winner = status
         if status > 0:
-            print('Checkmate!', reason)
+            print('Checkmate (turn ', str(self.__turn), ')! ', reason, sep='')
         elif status == 0:
-            print('Draw!', reason)
-        for player in self.__players:
-            if isinstance(player, AI):
-                print('Player', player.side, 'seed:', player.seed)
+            print('Draw (turn ', str(self.__turn), ')! ', reason, sep='')

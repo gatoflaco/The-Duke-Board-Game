@@ -15,7 +15,7 @@ from src.constants import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_WINDOW_ICON, GAME_
 
 pygame.init()
 display = Display(DISPLAY_WIDTH, DISPLAY_HEIGHT)
-display.toggle_theme()
+# display.toggle_theme()
 display.draw_bg()
 pygame.display.set_icon(GAME_WINDOW_ICON)
 pygame.display.set_caption(GAME_WINDOW_TITLE)
@@ -34,7 +34,7 @@ while not crashed:
     pygame.display.update()
     clock.tick(60)
     if not game.is_finished and not game.debug_flag:
-        # clock.tick(1)  # purposely delay, so that we can see the next line happen live
+        clock.tick(1)  # purposely delay, so that we can see the next line happen live
         game.take_turn()
 
 pygame.quit()

@@ -94,6 +94,7 @@ class AI(Player):
         self.__difficulty = difficulty
         self.__seed = rng_seed
         seed(self.__seed)
+        print('Player', self._side, 'seed:', self.__seed)
 
     def setup_phase(self):
         """Runs the setup phase for an AI.
@@ -148,15 +149,36 @@ class AI(Player):
         mapping = {}
         total_score = 0
         for i in range(len(choice_list)):
-            total_score += self.__score_choice(choice_list[i])
-            mapping[i] = total_score
-        choice = choice_list[0]  # if all choices are equally bad, this will be used (random after having shuffled)
-        if total_score != 0:  # if all choices WEREN'T equally bad
-            n = randrange(0, total_score)
-            for i in range(len(choice_list)):
-                if n < mapping[i]:  # found the choice in whose range the rng landed
+            score = self.__score_choice(choice_list[i])
+            if score == -1:  # score of -1 means to absolutely pick this choice right away
+                if self.__difficulty > Difficulty.EASY:
                     choice = choice_list[i]
-                    break
+                    if choice['action_type'] == 'pull':  # need to actually draw the new tile here
+                        x, y = choice['src_location']
+                        choice['tile'] = self.play_new_troop_tile(x, y)
+                    return choice
+                score = 1000
+            total_score += score
+            mapping[i] = score
+        choice = choice_list[0]  # if all choices are equally bad, this will be used (random after having shuffled)
+        if total_score == 0:  # when total score is 0, this means all choices are equally bad
+            if choice['action_type'] == 'pull':  # need to actually draw the new tile here
+                x, y = choice['src_location']
+                choice['tile'] = self.play_new_troop_tile(x, y)
+            return choice
+
+        # next, we bias the scores towards the average - the easier the difficulty, the closer to the average we shift
+        # this will make easier difficulties have a more uniform score distribution
+        # i.e., the easier difficulties will artificially increase their odds of making poorly-scored choices
+        average_score = sum(value for value in mapping.values()) // len(mapping)
+        cur_total = 0.0
+        n = randrange(0, total_score)  # roll the rng
+        for i in range(len(choice_list)):
+            choice = choice_list[i]
+            cur_total += round(((mapping[i] * 10 * self.__difficulty.value + average_score)
+                                / (10 * self.__difficulty.value + 1)), 2)
+            if n < cur_total:  # found the choice in whose range the rng landed
+                break
         if choice['action_type'] == 'pull':  # need to actually draw the new tile here
             x, y = choice['src_location']
             choice['tile'] = self.play_new_troop_tile(x, y)
@@ -204,22 +226,38 @@ class AI(Player):
         """Carries out the bulk of the scoring logic for a given choice.
 
         :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
-        :return: score for the given choice, a non-negative integer
+        :return: score for the given choice, a non-negative integer (or -1)
             Larger values indicate more promise. If the score is 0, it absolutely should not be picked.
+            -1 is a special case that tells the caller that the choice actually SHOULD be picked, over anything else.
         """
-        if self.__difficulty == Difficulty.BEGINNER:
-            return 0    # if every choice scores 0, take_turn() should choose a random move
-
-        score = 100
-
-        if self.__difficulty != Difficulty.EXPERT:
-            score += self.__general_heuristics(choice)
-
-        if self.__difficulty == Difficulty.EASY:
-            return score  # should not consider consequences of making the choice
+        score = 0
+        #if self.__difficulty == Difficulty.BEGINNER:
+        #    return score    # if every choice scores 0, take_turn() should choose a random move
+        score += self.__general_heuristics(choice)
 
         # next, pretend to make the move and see what effect it has on the game
-        score += self.__consider_consequences(choice)
+        if choice['action_type'] == 'pull':  # special handling for pull
+            pull_scores = []
+            total = 0
+            non_checkmate_count = 0
+            for tile in self._bag.tiles:
+                choice['tile'] = Troop(tile.name, self._side, choice['src_location'], True)
+                pull_scores.append(self.__consider_consequences(choice))
+                if pull_scores[-1] != -1:
+                    total += pull_scores[-1]
+                    non_checkmate_count != 1
+            if non_checkmate_count == 0:  # literally anything that gets pulled will checkmate the opponent
+                return -1  # special int that tells caller that they should definitely make this choice
+            average_score = total // non_checkmate_count
+            for i in range(len(pull_scores)):
+                if pull_scores[i] == -1:  # pulling this tile would checkmate
+                    pull_scores[i] = average_score * 2
+            score_to_add = sum(pull_scores) // len(pull_scores)  # expected value of pulling
+        else:
+            score_to_add = self.__consider_consequences(choice)
+        if score_to_add == -1:  # -1 represents that you should choose this move over everything else
+            return -1
+        score += score_to_add
 
         return score if score >= 0 else 0  # don't return negative numbers
 
@@ -233,44 +271,33 @@ class AI(Player):
         board = self.__game.board
         x, y = choice['src_location']
         if choice['action_type'] == 'pull':
-            if self.__difficulty > Difficulty.EASY:
-                score += self.__consider_trapped_duke(-1, -1, x, y)
-            if self.__difficulty > Difficulty.NORMAL:
-                # TODO: call function to calculate expected value of tile that would be pulled
-                #  that is, sum up all (probability of pulling t * value of t on side 1) and divide for the average
-                pass
+            score += self.__consider_trapped_duke(-1, -1, x, y)
+            # TODO: call function to calculate expected value of tile that would be pulled
+            #  that is, sum up all (probability of pulling t * value of t on side 1) and divide for the average
         elif choice['action_type'] == 'mov':
             i, j = choice['dst_location']
             dst_tile = board.get_tile(i, j)
             if tile_is_enemy(dst_tile, self):
                 score += 50  # prefer capturing enemy tiles
-                if self.__difficulty > Difficulty.EASY:
-                    score += TROOP_WEIGHTS[dst_tile.name][str(dst_tile.side)]
-            if self.__difficulty > Difficulty.EASY:
-                score += self.__consider_trapped_duke(x, y, i, j)
-            if self.__difficulty > Difficulty.NORMAL:
-                pass  # call function to look at what src tile would flip to (if it becomes useless, subtract score)
+                score += TROOP_WEIGHTS[dst_tile.name][str(dst_tile.side)]
+            score += self.__consider_trapped_duke(x, y, i, j)
+            # TODO: call function to look at what src tile would flip to (if it becomes useless, subtract score)
         elif choice['action_type'] == 'str':
             score += 50  # prefer capturing enemy tiles
-            if self.__difficulty > Difficulty.EASY:
-                i, j = choice['str_location']
-                str_tile = board.get_tile(i, j)
-                score += TROOP_WEIGHTS[str_tile.name][str(str_tile.side)]
-            if self.__difficulty > Difficulty.NORMAL:
-                pass  # call function to look at what src tile would flip to (if it becomes useless, subtract score)
+            i, j = choice['str_location']
+            str_tile = board.get_tile(i, j)
+            score += TROOP_WEIGHTS[str_tile.name][str(str_tile.side)]
+            # TODO: call function to look at what src tile would flip to (if it becomes useless, subtract score)
         elif choice['action_type'] == 'cmd':
             i, j = choice['dst_location']
             dst_tile = board.get_tile(i, j)
             if tile_is_enemy(dst_tile, self):
                 score += 50  # prefer capturing enemy tiles
-                if self.__difficulty > Difficulty.EASY:
-                    score += TROOP_WEIGHTS[dst_tile.name][str(dst_tile.side)]
-            if self.__difficulty > Difficulty.EASY:
-                score += self.__consider_trapped_duke(x, y, i, j)
-            if self.__difficulty > Difficulty.NORMAL:
-                pass  # call function to look at what cmd tile would flip to (if it becomes useless, subtract score)
+                score += TROOP_WEIGHTS[dst_tile.name][str(dst_tile.side)]
+            score += self.__consider_trapped_duke(x, y, i, j)
+            # TODO: call function to look at what cmd tile would flip to (if it becomes useless, subtract score)
         # TODO: consider more context than just whether the action would capture
-        #  for example, avoid trapping own Duke from moving, avoid moving Duke into a corner, etc.
+        #  for example, avoid moving Duke into a corner, etc.
         return score
 
     def __consider_trapped_duke(self, x, y, i, j):
@@ -291,18 +318,18 @@ class AI(Player):
         # first, consider improving score if tile is starting in the Duke's way
         if self._duke.side == 1 and y == duke_y:  # if tile is currently in same rank as Duke on side 1
             distance = abs(x - duke_x) - 1  # e.g., when directly adjacent, consider distance to be 0
-            score += (100 - distance * 20)  # the closer to the Duke, the more trapped, so add more
+            score += (200 - distance * 40)  # the closer to the Duke, the more trapped, so add more
         elif self._duke.side == 2 and x == duke_x:  # if tile is currently in same file as Duke on side 2
             distance = abs(y - duke_y) - 1
-            score += (100 - distance * 20)
+            score += (200 - distance * 40)
 
         # next, consider worsening score if tile would move into the Duke's way
         if self._duke.side == 1 and j == duke_y:  # if move would end in same rank as Duke on side 1
             distance = abs(i - duke_x) - 1
-            score -= (100 - distance * 20)  # the closer to the Duke, the more trapped, so subtract more
+            score -= (200 - distance * 40)  # the closer to the Duke, the more trapped, so subtract more
         elif self._duke.side == 2 and i == duke_x:  # if move would end in same file as Duke on side 2
             distance = abs(j - duke_y) - 1
-            score -= (100 - distance * 20)
+            score -= (200 - distance * 40)
         return score
 
     def __consider_consequences(self, choice):
@@ -311,25 +338,61 @@ class AI(Player):
         :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
         :return: score for the given choice
         """
+        if self.__game.turn == 15 and choice['action_type'] == 'str':
+            print(choice)
         score = 0
         players = self.__game.players
+        original_attacks = get_attacks(self.choices)
+        original_enemy_attacks = set()
+        for other in players:
+            if self != other:
+                original_enemy_attacks.union(get_attacks(other.choices))
+        original_choices = []
         cur_in_play = []
+        in_check = []
         for p in players:  # save some states before they get modified
+            original_choices.append(p.choices)
             cur_in_play.append(p.tiles_in_play.copy())
+            in_check.append(p.is_in_check)
+
+        if choice['action_type'] == 'pull':  # note that calling this function with a pull action requires a specific
+            x, y = choice['src_location']    # troop type being tested; that is, choice['tile'].name should not be ''
+            self.play_new_troop_tile(x, y, choice['tile'])  # this loc is why the above must be true
         self.__game.make_choice(self, choice, True)  # literally make the move
-
-        ai_choices = self.__game.calculate_choices(self, False)  # recalculate the allowed moves for the AI
-        ai_attacks = get_attacks(ai_choices)  # consider what AI would then be able to attack
-        # TODO: do something with knowledge of AI attacks upon making the move
-
+        self.update_choices(self.__game.calculate_choices(self))  # recalculate ai's allowed moves
+        new_attacks = get_attacks(self.choices)
+        ai_attacks = get_attacks(self.__game.calculate_choices(self, False))  # don't consider Duke safety here
         all_enemy_attacks = set()  # consider what enemies would then be able to attack
         for other in players:  # recalculate the allowed moves for the opponent(s)
-            if self != other:
-                other_choices = self.__game.calculate_choices(other, False)
-                all_enemy_attacks = all_enemy_attacks.union(get_attacks(other_choices))
-        # TODO: do something with knowledge of enemy attacks upon making the move
+            if score == -1:
+                break
+            if self == other:
+                continue
+            other.update_choices(self.__game.calculate_choices(other))  # recalculate their allowed moves
+            if other.duke.coords in ai_attacks:
+                other.set_check(True)
+            if has_no_valid_choices(other.choices):
+                if other.is_in_check:  # this move checkmates!
+                    score = -1
+                    continue
+            if other.is_in_check:
+                score += 1000
+            for tile in other.tiles_in_play:  # conveniently ignores a captured tile
+                if tile.coords in original_attacks and tile.coords not in new_attacks:
+                    score -= 100  # enemy troop was previously under threat, but no longer
+                if tile.coords in new_attacks and tile.coords not in original_attacks:
+                    score += 100  # enemy troop was not previously under threat, and now it is
+            all_enemy_attacks = all_enemy_attacks.union(get_attacks(other.choices))
+        if score != -1:  # consider if the move increased/decreased the number of friendly troops under attack
+            for tile in self.tiles_in_play:
+                if tile.coords in original_enemy_attacks and tile.coords not in all_enemy_attacks:
+                    score += 100
+                elif tile.coords in all_enemy_attacks and tile.coords not in original_enemy_attacks:
+                    score -= 100
 
         for i in range(len(players)):  # restore saved states
+            players[i].update_choices(original_choices[i])
             players[i].set_tiles_in_play(cur_in_play[i])
+            players[i].set_check(in_check[i])
         self.__game.undo_choice(self)
         return score

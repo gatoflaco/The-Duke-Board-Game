@@ -119,7 +119,8 @@ def has_no_valid_choices(choices):
                 return False
     return True
 
-def check_stalemate_by_counter(counter):
+
+def check_draw_by_counter(counter):
     """Handles the check for stalemate by the 50 turn rule.
 
     The 50 turn rule says that if no tiles were played or captured for 50 consecutive turns, the game is automatically

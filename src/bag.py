@@ -70,6 +70,10 @@ class Bag:
     def size(self):
         return len(self.__tiles)
 
+    @property
+    def tiles(self):
+        return self.__tiles
+
     def set_hovered(self, hovered=True):
         self.__hovered = hovered
 
