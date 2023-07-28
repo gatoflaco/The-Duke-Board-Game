@@ -7,7 +7,7 @@ This module contains all code related to the board.
 
 import pygame
 from src.display import Theme
-from src.constants import BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, BOARD_LOCATION, BOARD_BUFFER, FILES, RANKS, TILE_SIZE
+from src.constants import TEXT_BUFFER, BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, FILES, RANKS, TILE_SIZE
 
 
 class Board:
@@ -31,13 +31,14 @@ class Board:
 
         :param display: Display object containing the main game window
         """
-        display.blit(BOARD_DARK_PNG if display.theme == Theme.DARK else BOARD_PNG, BOARD_LOCATION)
+        display.blit(BOARD_DARK_PNG if display.theme == Theme.DARK else BOARD_PNG,
+                     ((display.width - BOARD_SIZE) // 2, 0))
         delta = TILE_SIZE + 6
         for i in range(6):
-            display.write(FILES[i], (BOARD_LOCATION[0] + delta * i + TILE_SIZE//2 - 2,
-                                     BOARD_LOCATION[1] + BOARD_SIZE + BOARD_BUFFER))
-            display.write(RANKS[i], (BOARD_LOCATION[0] - BOARD_BUFFER - 10,
-                                     BOARD_LOCATION[1] + BOARD_SIZE - delta * i - TILE_SIZE//2 - 2))
+            display.write(FILES[i], ((display.width - BOARD_SIZE) // 2 + delta * i + TILE_SIZE//2 - 2,
+                                     BOARD_SIZE + TEXT_BUFFER))
+            display.write(RANKS[i], ((display.width - BOARD_SIZE) // 2 - TEXT_BUFFER - 10,
+                                     BOARD_SIZE - delta * i - TILE_SIZE//2 - 2))
         for tile in sum(self.__grid, []):
             if tile is not None:
                 tile.draw(display)

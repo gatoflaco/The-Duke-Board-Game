@@ -6,7 +6,7 @@ This module contains all code related to tiles that are placed on the board.
 """
 
 from pygame import SRCALPHA, Surface, transform
-from src.constants import BOARD_SIZE, BOARD_LOCATION, PLAYER_COLORS, TILE_PNGS, TILE_SIZE
+from src.constants import BOARD_SIZE, PLAYER_COLORS, TILE_PNGS, TILE_SIZE
 
 
 def highlight_locations(display, locations, highlight):
@@ -23,7 +23,7 @@ def highlight_locations(display, locations, highlight):
         shader = Surface((TILE_SIZE + 2, TILE_SIZE + 2))
         shader.fill(highlight)
         shader.set_alpha(5)
-        x = BOARD_LOCATION + 4 + (TILE_SIZE + 6) * location[0]
+        x = (display.width - BOARD_SIZE) // 2 + 4 + (TILE_SIZE + 6) * location[0]
         y = BOARD_SIZE - (TILE_SIZE + 6 + (TILE_SIZE + 6) * location[1])
         display.blit(shader, (x, y))
 
@@ -63,25 +63,26 @@ class Tile:
     def player_side(self):
         return self._player_side
 
-    def draw(self, display, x=None, y=None):
+    def draw(self, display, x=None, y=None, rotated=False):
         """Draws the tile to the screen
 
         :param display: Display object containing the main game window
         :param x: x-coordinate of pixel location on game window of upper left corner of tile
         :param y: y-coordinate of pixel location on game window of upper left corner of tile
+        :param rotated: boolean that causes the tile to be drawn 180 degrees rotated when True
         """
-        if x is None:
-            x = BOARD_LOCATION[0] + 5 + (TILE_SIZE + 6) * self._coords[0]
-        if y is None:
-            y = BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self._coords[1])
-        if self._player_side != 0:
+        if (x is None or y is None) and self._player_side != 0:
             bg = Surface((TILE_SIZE + 4, TILE_SIZE + 4))
             bg.fill(PLAYER_COLORS[self._player_side - 1])
-            bg_x = BOARD_LOCATION[0] + 3 + (TILE_SIZE + 6) * self._coords[0]
+            bg_x = (display.width - BOARD_SIZE) // 2 + 3 + (TILE_SIZE + 6) * self._coords[0]
             bg_y = BOARD_SIZE - (TILE_SIZE + 7 + (TILE_SIZE + 6) * self._coords[1])
             display.blit(bg, (bg_x, bg_y))
+        if x is None:
+            x = (display.width - BOARD_SIZE) // 2 + 5 + (TILE_SIZE + 6) * self._coords[0]
+        if y is None:
+            y = BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self._coords[1])
         self._image.unlock()
-        display.blit(self._image, (x, y))
+        display.blit(transform.rotate(self._image, 180) if rotated else self._image, (x, y))
 
 
 class Troop(Tile):

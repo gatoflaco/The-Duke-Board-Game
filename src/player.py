@@ -7,8 +7,7 @@ This module contains all code related to players in a given game of the Duke.
 
 from src.bag import Bag
 from src.tile import Troop
-from src.constants import (DISPLAY_WIDTH, DISPLAY_HEIGHT, TEXT_FONT_SIZE, TEXT_BUFFER, BOARD_SIZE, BOARD_LOCATION,
-                           TILE_TYPES, STARTING_TROOPS, BAG_SIZE, BAG_BUFFER)
+from src.constants import BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE
 from random import randrange, shuffle
 
 
@@ -122,18 +121,39 @@ class Player:
     def update(self, display):
         if self._side == 1:
             display.write('Player 1',
-                          (BOARD_LOCATION[0] + BOARD_SIZE + (DISPLAY_WIDTH - BOARD_SIZE) // 2 - BAG_BUFFER,
-                           DISPLAY_HEIGHT - BAG_SIZE - 2 * BAG_BUFFER - 4 * TEXT_FONT_SIZE), True)
+                          (display.width - BUFFER,
+                           display.height - BAG_SIZE - 2 * BUFFER - 4 * TEXT_FONT_SIZE), True)
             display.write(self._name,
-                          (BOARD_LOCATION[0] + BOARD_SIZE + (DISPLAY_WIDTH - BOARD_SIZE) // 2 - BAG_BUFFER,
-                           DISPLAY_HEIGHT - BAG_SIZE - 2 * BAG_BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
+                          (display.width - BUFFER,
+                           display.height - BAG_SIZE - 2 * BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
+            dx = 0
+            dy = 0
+            for tile in self._captured:
+                tile.draw(display,
+                          display.width - TILE_SIZE - BUFFER - dx,
+                          (display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE - 2 * TEXT_BUFFER - TILE_SIZE
+                           - dy), True)
+                dy += TILE_SIZE // 4
+                if dy > TILE_SIZE * 2:
+                    dx = TILE_SIZE + BUFFER
+                    dy = 0
         else:
             display.write('Player 2',
-                          (BOARD_LOCATION[0] - (DISPLAY_WIDTH - BOARD_SIZE) // 2 + BAG_BUFFER,
-                           BAG_BUFFER + BAG_SIZE + BAG_BUFFER + 2 * TEXT_FONT_SIZE))
+                          (BUFFER,
+                           BUFFER + BAG_SIZE + BUFFER + 2 * TEXT_FONT_SIZE))
             display.write(self._name,
-                          (BOARD_LOCATION[0] - (DISPLAY_WIDTH - BOARD_SIZE) // 2 + BAG_BUFFER,
-                           BAG_BUFFER + BAG_SIZE + BAG_BUFFER + 3 * TEXT_FONT_SIZE + TEXT_BUFFER))
+                          (BUFFER,
+                           BUFFER + BAG_SIZE + BUFFER + 3 * TEXT_FONT_SIZE + TEXT_BUFFER))
+            dx = 0
+            dy = 0
+            for tile in self._captured:
+                tile.draw(display,
+                          BUFFER + dx,
+                          BUFFER + BAG_SIZE + 2 * BUFFER + 4 * TEXT_FONT_SIZE + 2 * TEXT_BUFFER + dy, True)
+                dy += TILE_SIZE // 4
+                if dy > TILE_SIZE * 2:
+                    dx = TILE_SIZE + BUFFER
+                    dy = 0
         self._bag.draw(display)
 
     def take_turn(self):

@@ -8,7 +8,7 @@ This module contains code implementing the AI for vs CPU games.
 from src.player import Player
 from src.tile import Troop
 from src.util import *
-from src.constants import CPU_BOUND_MUTEX, STARTING_TROOPS, TROOP_WEIGHTS
+from src.constants import STARTING_TROOPS, TROOP_WEIGHTS
 from enum import Enum
 from random import randrange, seed, shuffle
 from sys import maxsize
@@ -102,7 +102,6 @@ class AI(Player):
             and then placing exactly two Footman tiles on any 2 of the 3 cardinally adjacent spaces next to the Duke.
         Although the AI decides where to place its tiles, it doesn't score anything here. It just randomly picks.
         """
-        CPU_BOUND_MUTEX.acquire()  # tells main not to bother updating the screen during this process
         y = 0 if self._side == 1 else 5
         valid_duke_coords = {(2, y), (3, y)}
         duke_coords = valid_duke_coords.pop()  # randomly pick one of the valid starting places for the Duke
@@ -117,7 +116,6 @@ class AI(Player):
             if troop_name == 'Duke':
                 continue
             self._in_play.append(Troop(troop_name, self._side, other_coords.pop(), True))
-        CPU_BOUND_MUTEX.release()
 
     @property
     def seed(self):
@@ -145,7 +143,6 @@ class AI(Player):
 
         :return: special dict called "choice", whose format is documented in docs/choice_formats.txt
         """
-        CPU_BOUND_MUTEX.acquire()
         choice_list = self.__initialize_choice_list()
         shuffle(choice_list)  # for randomness
         mapping = {}
@@ -158,7 +155,6 @@ class AI(Player):
                     if choice['action_type'] == 'pull':  # need to actually draw the new tile here
                         x, y = choice['src_location']
                         choice['tile'] = self.play_new_troop_tile(x, y)
-                    CPU_BOUND_MUTEX.release()
                     return choice
                 score = 1000
             total_score += score
@@ -168,7 +164,6 @@ class AI(Player):
             if choice['action_type'] == 'pull':  # need to actually draw the new tile here
                 x, y = choice['src_location']
                 choice['tile'] = self.play_new_troop_tile(x, y)
-            CPU_BOUND_MUTEX.release()
             return choice
 
         # next, we bias the scores towards the average - the easier the difficulty, the closer to the average we shift
@@ -186,7 +181,6 @@ class AI(Player):
         if choice['action_type'] == 'pull':  # need to actually draw the new tile here
             x, y = choice['src_location']
             choice['tile'] = self.play_new_troop_tile(x, y)
-        CPU_BOUND_MUTEX.release()
         return choice
 
     def __initialize_choice_list(self):

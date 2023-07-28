@@ -6,8 +6,7 @@ This module contains all code related to bags that hold tiles.
 """
 
 from pygame import SRCALPHA, Surface
-from constants import (DISPLAY_WIDTH, DISPLAY_HEIGHT, TEXT_FONT_SIZE, BOARD_SIZE, BOARD_LOCATION, BAG_PNG, BAG_SIZE,
-                       BAG_BUFFER)
+from constants import BUFFER, TEXT_FONT_SIZE, BAG_PNG, BAG_SIZE
 import random
 
 
@@ -40,12 +39,6 @@ class Bag:
         self.__side = side
         self.__x = 0
         self.__y = 0
-        if self.__side == 1:
-            self.__x = BOARD_LOCATION[0] + BOARD_SIZE + (DISPLAY_WIDTH - BOARD_SIZE) // 2 - BAG_SIZE - BAG_BUFFER
-            self.__y = DISPLAY_HEIGHT - BAG_SIZE - BAG_BUFFER
-        elif self.__side == 2:
-            self.__x = BOARD_LOCATION[0] - (DISPLAY_WIDTH - BOARD_SIZE) // 2 + BAG_BUFFER
-            self.__y = BAG_BUFFER
         self.__state = Bag.SELECTABLE
         self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)  # creates transparent background
         self.__image.blit(BAG_PNG, (0, 0))  # draw png onto surface, cropping off extra pixels
@@ -103,12 +96,18 @@ class Bag:
         :param y: y-coordinate of pixel location on game window of upper left corner of bag
         """
         if x is None:
-            x = self.__x
+            if self.__side == 1:
+                x = display.width - BAG_SIZE - BUFFER
+            elif self.__side == 2:
+                x = BUFFER
         if y is None:
-            y = self.__y
+            if self.__side == 1:
+                y = display.height - BAG_SIZE - BUFFER
+            elif self.__side == 2:
+                y = BUFFER
         display.draw(self.__image, (x, y))
         if self.__side == 1:
             display.write('{:02d} tiles remaining'.format(len(self.__tiles)),
-                          (x + BAG_SIZE, y - BAG_BUFFER - TEXT_FONT_SIZE), True)
+                          (x + BAG_SIZE, y - BUFFER - TEXT_FONT_SIZE), True)
         else:
-            display.write('{:02d} tiles remaining'.format(len(self.__tiles)), (x, y + BAG_SIZE + BAG_BUFFER))
+            display.write('{:02d} tiles remaining'.format(len(self.__tiles)), (x, y + BAG_SIZE + BUFFER))

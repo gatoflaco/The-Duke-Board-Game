@@ -10,16 +10,16 @@ from json import load
 from threading import Lock
 
 # main constants
-DISPLAY_WIDTH = 1208  # game window width, must be at least as width of BOARD_PNG + twice the width of BAG_PNG
-DISPLAY_HEIGHT = 828  # game window height, must be at least the height of BOARD_PNG
+DISPLAY_WIDTH = 1472  # game window width, must be at least as width of BOARD_PNG + twice the width of BAG_PNG
+DISPLAY_HEIGHT = 836  # game window height, must be at least the height of BOARD_PNG
 GAME_WINDOW_ICON = image.load('assets/pngs/icon_small.png')  # icon that displays in upper corner of game window
 GAME_WINDOW_TITLE = 'The Duke'  # string that displays as title of game window
 
 # display constants
+BUFFER = 20
 THEME_TOGGLE_PNG = image.load('assets/pngs/theme_toggle.png')
 THEME_TOGGLE_WIDTH = 128  # width of a single toggler
 THEME_TOGGLE_HEIGHT = 64  # height of a single toggler
-THEME_BUFFER = 10
 BG_COLOR_LIGHT_MODE = Color(232, 230, 220)
 TEXT_COLOR_LIGHT_MODE = Color(15, 15, 15)
 BG_COLOR_DARK_MODE = Color(56, 52, 52)
@@ -34,8 +34,6 @@ CPU_BOUND_MUTEX = Lock()
 BOARD_PNG = image.load('assets/pngs/board.png')  # png for the game board, note that dimensions must be square
 BOARD_DARK_PNG = image.load('assets/pngs/board_dark.png')  # for dark mode theme
 BOARD_SIZE = BOARD_PNG.get_width()  # width and height of the board
-BOARD_LOCATION = ((DISPLAY_WIDTH - BOARD_SIZE) // 2, 0)  # pixel position for upper left corner of BOARD_PNG
-BOARD_BUFFER = 5
 FILES = ['A', 'B', 'C', 'D', 'E', 'F']
 RANKS = ['1', '2', '3', '4', '5', '6']
 
@@ -68,4 +66,3 @@ MEAN_PULL_WEIGHT = sum([value['1'] for value in TROOP_WEIGHTS.values()])//len(TR
 # bag constants
 BAG_PNG = image.load('assets/pngs/bag.png')  # png for player bags
 BAG_SIZE = 128  # width and height of a single bag
-BAG_BUFFER = 20
