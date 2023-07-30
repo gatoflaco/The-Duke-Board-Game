@@ -11,24 +11,32 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame
 from src.game import Game
 from src.display import Display
-from src.constants import GAME_WINDOW_ICON, GAME_WINDOW_TITLE, CPU_BOUND_MUTEX
+from src.constants import GAME_WINDOW_ICON, GAME_WINDOW_TITLE
 from threading import Thread
+
+
+class Global:
+    CRASHED = False
 
 
 def main_menu_loop():
     # TODO: make a main menu
     while True:
         game_loop()
-        crashed = True
+        display.set_help_callback()
         break
+    # Global.CRASHED = True  # should associate this with a quit menu option
 
 
 def game_loop():
-    while not game.is_finished and not game.debug_flag:
+    with Display.MUTEX:
+        game.setup(display)
+    clock.tick(1/10)
+    while not game.is_finished:
         clock.tick(1)  # purposely delay, so that we can see the next line happen live
-        CPU_BOUND_MUTEX.acquire()
-        game.take_turn()
-        CPU_BOUND_MUTEX.release()
+        Display.MUTEX.acquire()
+        game.take_turn(display)
+        Display.MUTEX.release()
 
 
 pygame.init()
@@ -38,32 +46,26 @@ pygame.display.set_caption(GAME_WINDOW_TITLE)
 clock = pygame.time.Clock()
 
 game = Game()
-crashed = False
-previous_theme_toggle_hovered = False
 
 Thread(target=main_menu_loop, daemon=True).start()
 
-while not crashed:
-    theme_toggle_hovered = display.theme_toggle_hovered
-    if not previous_theme_toggle_hovered and theme_toggle_hovered:
-        display.handle_theme_toggle_hovered()
-    elif previous_theme_toggle_hovered and not theme_toggle_hovered:
-        display.handle_theme_toggle_unhovered()
-    previous_theme_toggle_hovered = theme_toggle_hovered
+while not Global.CRASHED:
+    display.handle_component_hovers()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            crashed = True
+            # TODO: ask for confirmation, warning of potential lost progress
+            Global.CRASHED = True
         if event.type == pygame.MOUSEBUTTONUP:
-            if theme_toggle_hovered:
-                with CPU_BOUND_MUTEX:
-                    display.toggle_theme()
+            if display.component_hovered:
+                with Display.MUTEX:
+                    display.handle_component_clicks()
         if event.type == pygame.VIDEORESIZE:
             width, height = event.size
             display.handle_resize(width, height)
 
-    if not CPU_BOUND_MUTEX.locked():
-        with CPU_BOUND_MUTEX:
+    if not Display.MUTEX.locked():  # don't refresh the screen while other threads are doing calculations
+        with Display.MUTEX:  # block other threads from doing calculations while the screen is being updated
             game.update(display)
     pygame.display.update()
     clock.tick(60)

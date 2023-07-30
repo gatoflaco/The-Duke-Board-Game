@@ -51,7 +51,6 @@ class Player:
             },
             'act': {}
         }
-        self.setup_phase()  # TODO: don't call this here, call it after game has drawn blank board
 
     def setup_phase(self):
         """Runs the setup phase for this player.
@@ -126,6 +125,7 @@ class Player:
             display.write(self._name,
                           (display.width - BUFFER,
                            display.height - BAG_SIZE - 2 * BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
+            # display.blit() display.width - BAG_SIZE - BUFFER
             dx = 0
             dy = 0
             for tile in self._captured:

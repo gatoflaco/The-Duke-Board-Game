@@ -139,3 +139,26 @@ def check_draw_by_counter(counter):
     elif counter == 41 or counter == 42:
         print('Looks it might be stalemate?')
     return False
+
+
+def handle_help_clicked_setup(display):
+    """Event handler for clicking the help icon during the game's setup phase.
+
+    :param display: Display object of the display onto which the help info should be written
+    """
+    # TODO: more than just the following lol
+    display.write('TEST', (0, 0))
+
+
+def handle_help_clicked_gameplay(display, in_check=False):
+    """Event handler for clicking the help icon during the main gameplay
+
+    :param display: Display object of the display onto which the help info should be written
+    :param in_check: boolean that can be set to True for a more personalized help message
+        Should only be set to True when called at the start of a non-AI player's turn while they are in check
+    """
+    # TODO: more than just the following
+    if in_check:
+        print('You\'re in check!')
+    else:
+        print('gameplay help')

@@ -7,11 +7,10 @@ This module simply contains all the constants used by other modules.
 
 from pygame import Color, image
 from json import load
-from threading import Lock
 
 # main constants
-DISPLAY_WIDTH = 1472  # game window width, must be at least as width of BOARD_PNG + twice the width of BAG_PNG
-DISPLAY_HEIGHT = 836  # game window height, must be at least the height of BOARD_PNG
+DISPLAY_WIDTH = 1452  # game window width
+DISPLAY_HEIGHT = 836  # game window height
 GAME_WINDOW_ICON = image.load('assets/pngs/icon_small.png')  # icon that displays in upper corner of game window
 GAME_WINDOW_TITLE = 'The Duke'  # string that displays as title of game window
 
@@ -20,6 +19,10 @@ BUFFER = 20
 THEME_TOGGLE_PNG = image.load('assets/pngs/theme_toggle.png')
 THEME_TOGGLE_WIDTH = 128  # width of a single toggler
 THEME_TOGGLE_HEIGHT = 64  # height of a single toggler
+SETTINGS_PNG = image.load('assets/pngs/settings.png')
+SETTINGS_SIZE = 64
+HELP_PNG = image.load('assets/pngs/help.png')
+HELP_SIZE = 64
 BG_COLOR_LIGHT_MODE = Color(232, 230, 220)
 TEXT_COLOR_LIGHT_MODE = Color(15, 15, 15)
 BG_COLOR_DARK_MODE = Color(56, 52, 52)
@@ -28,7 +31,10 @@ TEXT_FONT_SIZE = 16
 TEXT_BUFFER = 4
 
 # game constants
-CPU_BOUND_MUTEX = Lock()
+OFFER_DRAW_PNG = image.load('assets/pngs/draw.png')
+OFFER_DRAW_SIZE = 64
+FORFEIT_PNG = image.load('assets/pngs/forfeit.png')
+FORFEIT_SIZE = 64
 
 # board constants
 BOARD_PNG = image.load('assets/pngs/board.png')  # png for the game board, note that dimensions must be square

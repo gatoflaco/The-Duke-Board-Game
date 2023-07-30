@@ -102,20 +102,26 @@ class AI(Player):
             and then placing exactly two Footman tiles on any 2 of the 3 cardinally adjacent spaces next to the Duke.
         Although the AI decides where to place its tiles, it doesn't score anything here. It just randomly picks.
         """
+        start = {}  # will hold info about the starting locations chosen
         y = 0 if self._side == 1 else 5
         valid_duke_coords = {(2, y), (3, y)}
         duke_coords = valid_duke_coords.pop()  # randomly pick one of the valid starting places for the Duke
         for troop_name in STARTING_TROOPS:  # first, find and play the Duke
             if troop_name == 'Duke':
                 self._in_play.append(Troop(troop_name, self._side, duke_coords, True))
-                self._duke = self._in_play[-1]
+                start['Duke'] = self._in_play[-1]
+                self._duke = start['Duke']
                 break
         dy = 1 if self._side == 1 else -1
         other_coords = {(duke_coords[0] - 1, y), (duke_coords[0], y + dy), (duke_coords[0] + 1, y)}
+        other_count = 0
         for troop_name in STARTING_TROOPS:  # next, play other starting troops
             if troop_name == 'Duke':
                 continue
+            other_count += 1
             self._in_play.append(Troop(troop_name, self._side, other_coords.pop(), True))
+            start['Other ' + str(other_count)] = self._in_play[-1]
+        return start
 
     @property
     def seed(self):
@@ -159,8 +165,8 @@ class AI(Player):
                 score = 1000
             total_score += score
             mapping[i] = score
-        choice = choice_list[0]  # if all choices are equally bad, this will be used (random after having shuffled)
         if total_score == 0:  # when total score is 0, this means all choices are equally bad
+            choice = choice_list[0]  # if all choices are equally bad, this will be used (random after having shuffled)
             if choice['action_type'] == 'pull':  # need to actually draw the new tile here
                 x, y = choice['src_location']
                 choice['tile'] = self.play_new_troop_tile(x, y)
@@ -172,6 +178,7 @@ class AI(Player):
         average_score = sum(value for value in mapping.values()) // len(mapping)
         cur_total = 0.0
         n = randrange(0, total_score)  # roll the rng
+        choice = None
         for i in range(len(choice_list)):
             choice = choice_list[i]
             cur_total += round(((mapping[i] * 10 * self.__difficulty.value + average_score)

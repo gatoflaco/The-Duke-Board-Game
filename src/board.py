@@ -7,6 +7,7 @@ This module contains all code related to the board.
 
 import pygame
 from src.display import Theme
+from src.tile import Tile
 from src.constants import TEXT_BUFFER, BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, FILES, RANKS, TILE_SIZE
 
 
@@ -40,5 +41,5 @@ class Board:
             display.write(RANKS[i], ((display.width - BOARD_SIZE) // 2 - TEXT_BUFFER - 10,
                                      BOARD_SIZE - delta * i - TILE_SIZE//2 - 2))
         for tile in sum(self.__grid, []):
-            if tile is not None:
+            if isinstance(tile, Tile):
                 tile.draw(display)

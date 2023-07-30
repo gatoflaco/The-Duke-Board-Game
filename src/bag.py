@@ -37,8 +37,6 @@ class Bag:
         self.__tiles = tiles
         self.__hovered = False
         self.__side = side
-        self.__x = 0
-        self.__y = 0
         self.__state = Bag.SELECTABLE
         self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)  # creates transparent background
         self.__image.blit(BAG_PNG, (0, 0))  # draw png onto surface, cropping off extra pixels

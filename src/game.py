@@ -5,8 +5,9 @@ Isaac Jung
 This module contains all the code related to playing a game of The Duke.
 """
 
+from src.display import Display
 from src.board import Board
-# from src.player import Player
+from src.player import Player
 from src.ai import Difficulty, AI
 from src.tile import Troop
 from src.util import *
@@ -26,27 +27,15 @@ class Game:
         self.__board = Board()
         self.__turn = 0
         player1 = AI(1, self, Difficulty.NORMAL)
-        player2 = AI(2, self, Difficulty.NORMAL)
+        player2 = AI(2, self, Difficulty.NORMAL, 5731187400411910005)
         self.__players = (player1, player2)
         self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
         self.__non_meaningful_moves_counter = 0
-        for player in self.__players:  # do some initial setup
-            for tile in player.tiles_in_play:
-                (x, y) = tile.coords
-                self.__board.set_tile(x, y, tile)
-            player.update_choices(self.calculate_choices(player))
-        self.debug_flag = False
 
     @property
     def board(self):
         return self.__board
-
-    def increment_turn(self):
-        self.__turn += 1
-
-    def decrement_turn(self):
-        self.__turn -= 1
 
     @property
     def turn(self):
@@ -64,8 +53,19 @@ class Game:
         self.__board.draw(display)
         for player in self.__players:
             player.update(display)
+        #display.blit()
 
-    def take_turn(self):
+    def setup(self, display):
+        with Display.HANDLER_LOCK:
+            display.set_help_callback(handle_help_clicked_setup, (display,))
+        for player in self.__players:  # do some initial setup
+            self.__actions_taken.append(player.setup_phase())  # initial tile placements
+            for tile in player.tiles_in_play:
+                (x, y) = tile.coords
+                self.__board.set_tile(x, y, tile)
+            player.update_choices(self.calculate_choices(player))
+
+    def take_turn(self, display):
         """Main gameplay loop.
 
         A single call will consist of the following broad steps for whichever player is up to take their turn:
@@ -76,6 +76,10 @@ class Game:
         self.__turn += 1
         print('Turn', self.__turn)
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
+        print(isinstance(player, Player))
+        with display.HANDLER_LOCK:
+            display.set_help_callback(handle_help_clicked_gameplay, (display, player.is_in_check))
+
         self.make_choice(player, player.take_turn())  # update the board based on player's choice
         player.set_check(False)  # must not be in check at this point
         if check_draw_by_counter(self.__non_meaningful_moves_counter):
@@ -85,6 +89,7 @@ class Game:
         dead_position = True
         if not self.__can_only_move_duke(player):
             dead_position = False
+
         for other in self.__players:  # next, we should see what effect the move had on the opponent(s)
             if player == other:
                 continue
@@ -99,6 +104,7 @@ class Game:
             other.update_choices(other_choices)
             if dead_position and not self.__can_only_move_duke(other):
                 dead_position = False
+
         if dead_position:
             self.__end(0, 'Dead position - neither player can checkmate.')
 

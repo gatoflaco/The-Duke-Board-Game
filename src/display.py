@@ -7,9 +7,10 @@ This module contains all the code related to the UI.
 
 from pygame import display, font, mouse, RESIZABLE, SRCALPHA, Surface
 from src.constants import (DISPLAY_WIDTH, DISPLAY_HEIGHT, BUFFER, THEME_TOGGLE_PNG, THEME_TOGGLE_WIDTH,
-                           THEME_TOGGLE_HEIGHT, BG_COLOR_LIGHT_MODE, TEXT_COLOR_LIGHT_MODE, BG_COLOR_DARK_MODE,
-                           TEXT_COLOR_DARK_MODE, TEXT_FONT_SIZE)
+                           THEME_TOGGLE_HEIGHT, SETTINGS_PNG, SETTINGS_SIZE, HELP_PNG, HELP_SIZE, BG_COLOR_LIGHT_MODE,
+                           TEXT_COLOR_LIGHT_MODE, BG_COLOR_DARK_MODE, TEXT_COLOR_DARK_MODE, TEXT_FONT_SIZE)
 from enum import Enum
+from threading import Lock
 
 
 class Theme(Enum):
@@ -38,6 +39,8 @@ class Display:
         Affects background and text colors used.
         When not provided, defaults to a light mode theme.
     """
+    MUTEX = Lock()  # used to lock screen-update calculations from happening during a screen update and vice versa
+    HANDLER_LOCK = Lock()  # used specifically to protect against showing the wrong menu during transitions
 
     def __init__(self, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, text_font=None, theme=Theme.LIGHT):
         self.__game_display = display.set_mode((width, height), RESIZABLE)
@@ -45,33 +48,107 @@ class Display:
         if text_font is not None and isinstance(text_font, font.Font):
             self.__font = text_font
         self.__theme = theme
-        self.__theme_toggler_hovered = False
-        self.__image = None
-        self.draw_bg()
-        self.draw_theme_toggle()
+        self.__components = {
+            'theme_toggler': {
+                'image': Surface((THEME_TOGGLE_WIDTH, THEME_TOGGLE_HEIGHT), SRCALPHA),
+                'location': self.calculate_theme_toggler_location(),
+                'was_hovered': False,
+                'is_hovered': False,
+                'hovered_handler': self.draw_theme_toggle,
+                'clicked_handler': self.toggle_theme,
+                'clicked_args': (),
+                'resized_handler': self.calculate_theme_toggler_location
+            },
+            'settings': {
+                'image': Surface((SETTINGS_SIZE, SETTINGS_SIZE), SRCALPHA),
+                'location': self.calculate_settings_location(),
+                'was_hovered': False,
+                'is_hovered': False,
+                'hovered_handler': self.draw_settings,
+                'clicked_handler': self.change_settings,
+                'clicked_args': (),
+                'resized_handler': self.calculate_settings_location
+            },
+            'help': {
+                'image': Surface((HELP_SIZE, HELP_SIZE), SRCALPHA),
+                'location': self.calculate_help_location(),
+                'was_hovered': False,
+                'is_hovered': False,
+                'hovered_handler': self.draw_help,
+                'clicked_handler': self.show_help,
+                'clicked_args': (),
+                'resized_handler': self.calculate_help_location
+            }
+        }
+        self.draw_all()
 
     def toggle_theme(self):
+        self.HANDLER_LOCK.release()
         self.__theme = ~self.__theme
-        self.draw_bg()
-        self.draw_theme_toggle()
+        self.draw_all()
+        self.HANDLER_LOCK.acquire()
+
+    def change_settings(self):
+        print('default settings')  # TODO: handler
+
+    def show_help(self):
+        print('default help')  # TODO: handler
 
     @property
     def theme(self):
         return self.__theme
 
+    def draw_all(self):
+        self.draw_bg()
+        self.draw_theme_toggle()
+        self.draw_settings()
+        self.draw_help()
+
+    def draw_bg(self):
+        self.__game_display.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
+
     def draw_theme_toggle(self):
-        self.__image = Surface((THEME_TOGGLE_WIDTH, THEME_TOGGLE_HEIGHT), SRCALPHA)  # creates transparent background
-        if not self.__theme_toggler_hovered:
+        self.__components['theme_toggler']['image'] = Surface((THEME_TOGGLE_WIDTH, THEME_TOGGLE_HEIGHT), SRCALPHA)
+        if not self.__components['theme_toggler']['is_hovered']:
             if self.__theme == Theme.LIGHT:
-                self.__image.blit(THEME_TOGGLE_PNG, (0, 0))  # draw png onto surface, cropping off extra pixels
+                self.__components['theme_toggler']['image'].blit(THEME_TOGGLE_PNG, (0, 0))
             elif self.__theme == Theme.DARK:
-                self.__image.blit(THEME_TOGGLE_PNG, (0, -THEME_TOGGLE_HEIGHT))
+                self.__components['theme_toggler']['image'].blit(THEME_TOGGLE_PNG, (0, -THEME_TOGGLE_HEIGHT))
         else:
             if self.__theme == Theme.LIGHT:
-                self.__image.blit(THEME_TOGGLE_PNG, (-THEME_TOGGLE_WIDTH, 0))
+                self.__components['theme_toggler']['image'].blit(THEME_TOGGLE_PNG, (-THEME_TOGGLE_WIDTH, 0))
             elif self.__theme == Theme.DARK:
-                self.__image.blit(THEME_TOGGLE_PNG, (-THEME_TOGGLE_WIDTH, -THEME_TOGGLE_HEIGHT))
-        self.blit(self.__image, (self.__game_display.get_width() - THEME_TOGGLE_WIDTH - BUFFER, BUFFER))
+                self.__components['theme_toggler']['image'].blit(THEME_TOGGLE_PNG, (-THEME_TOGGLE_WIDTH,
+                                                                                    -THEME_TOGGLE_HEIGHT))
+        self.blit(self.__components['theme_toggler']['image'], self.__components['theme_toggler']['location'])
+
+    def draw_settings(self):
+        self.__components['settings']['image'] = Surface((SETTINGS_SIZE, SETTINGS_SIZE), SRCALPHA)
+        if not self.__components['settings']['is_hovered']:
+            if self.__theme == Theme.LIGHT:
+                self.__components['settings']['image'].blit(SETTINGS_PNG, (0, 0))
+            elif self.__theme == Theme.DARK:
+                self.__components['settings']['image'].blit(SETTINGS_PNG, (0, -SETTINGS_SIZE))
+        else:
+            if self.__theme == Theme.LIGHT:
+                self.__components['settings']['image'].blit(SETTINGS_PNG, (-SETTINGS_SIZE, 0))
+            elif self.__theme == Theme.DARK:
+                self.__components['settings']['image'].blit(SETTINGS_PNG, (-SETTINGS_SIZE, -SETTINGS_SIZE))
+        self.blit(self.__components['settings']['image'], self.__components['settings']['location'])
+
+    def draw_help(self):
+        self.__components['help']['image'] = Surface((HELP_SIZE, HELP_SIZE), SRCALPHA)
+        if not self.__components['help']['is_hovered']:
+            if self.__theme == Theme.LIGHT:
+                self.__components['help']['image'].blit(HELP_PNG, (0, 0))
+            elif self.__theme == Theme.DARK:
+                self.__components['help']['image'].blit(HELP_PNG, (0, -HELP_SIZE))
+        else:
+            if self.__theme == Theme.LIGHT:
+                self.__components['help']['image'].blit(HELP_PNG, (-HELP_SIZE, 0))
+            elif self.__theme == Theme.DARK:
+                self.__components['help']['image'].blit(HELP_PNG, (-HELP_SIZE, -HELP_SIZE))
+        self.blit(self.__components['help']['image'], self.__components['help']['location'])
 
     @property
     def width(self):
@@ -80,9 +157,6 @@ class Display:
     @property
     def height(self):
         return self.__game_display.get_height()
-
-    def draw_bg(self):
-        self.__game_display.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
 
     def blit(self, surface, location):
         self.__game_display.blit(surface, location)
@@ -123,22 +197,47 @@ class Display:
         self.blit(surface, location)
 
     @property
-    def theme_toggle_hovered(self, x=None, y=None):
-        if x is None or y is None:
-            x, y = mouse.get_pos()
-        return self.__image.get_rect().collidepoint(
-            (x - (self.__game_display.get_width() - THEME_TOGGLE_WIDTH - BUFFER), y - BUFFER))
+    def component_hovered(self):
+        return True in [component['is_hovered'] for component in self.__components.values()]  # I hate this
 
-    def handle_theme_toggle_hovered(self):
-        self.__theme_toggler_hovered = True
-        self.draw_theme_toggle()
+    def handle_component_hovers(self):
+        x, y = mouse.get_pos()
+        for component in self.__components.values():
+            component['is_hovered'] = component['image'].get_rect().collidepoint(
+                (x - component['location'][0], y - component['location'][1]))
+            if (not component['was_hovered'] and component['is_hovered']
+                    or component['was_hovered'] and not component['is_hovered']):
+                component['hovered_handler']()  # only call handler when hovered state changed
+            component['was_hovered'] = component['is_hovered']
 
-    def handle_theme_toggle_unhovered(self):
-        self.__theme_toggler_hovered = False
-        self.draw_theme_toggle()
+    def handle_component_clicks(self):
+        for component in self.__components.values():
+            if component['is_hovered']:
+                callback = component['clicked_handler']
+                args = component['clicked_args']
+                with self.HANDLER_LOCK:
+                    callback(*args)  # execute callback function with args
+
+    def calculate_theme_toggler_location(self):
+        return self.__game_display.get_width() - THEME_TOGGLE_WIDTH - BUFFER, BUFFER
+
+    def calculate_settings_location(self):
+        return self.__game_display.get_width() - THEME_TOGGLE_WIDTH - SETTINGS_SIZE - 2 * BUFFER, BUFFER
+
+    def calculate_help_location(self):
+        return self.__game_display.get_width() - THEME_TOGGLE_WIDTH - SETTINGS_SIZE - HELP_SIZE - 3 * BUFFER, BUFFER
 
     def handle_resize(self, width, height):
         if width < DISPLAY_WIDTH or height < DISPLAY_HEIGHT:
             self.__game_display = display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT), RESIZABLE)
-        self.draw_bg()
-        self.draw_theme_toggle()
+        for component in self.__components.values():
+            component['location'] = component['resized_handler']()
+        self.draw_all()
+
+    def set_help_callback(self, callback=None, args=None):
+        if callback is None or args is None:
+            self.__components['help']['clicked_handler'] = self.show_help
+            self.__components['help']['clicked_args'] = ()
+        else:
+            self.__components['help']['clicked_handler'] = callback
+            self.__components['help']['clicked_args'] = args
