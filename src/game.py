@@ -12,7 +12,9 @@ from src.ai import Difficulty, AI
 from src.tile import Troop
 from src.util import *
 from src.constants import TROOP_MOVEMENTS
+from copy import copy
 from itertools import chain
+from time import time
 
 
 class Game:
@@ -32,6 +34,7 @@ class Game:
         self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
         self.__non_meaningful_moves_counter = 0
+        self.__start_time = time()
 
     @property
     def board(self):
@@ -56,13 +59,15 @@ class Game:
         #display.blit()
 
     def setup(self, display):
-        with Display.HANDLER_LOCK:
+        with display.HANDLER_LOCK:
             display.set_help_callback(handle_help_clicked_setup, (display,))
         for player in self.__players:  # do some initial setup
             self.__actions_taken.append(player.setup_phase())  # initial tile placements
             for tile in player.tiles_in_play:
                 (x, y) = tile.coords
-                self.__board.set_tile(x, y, tile)
+                with Display.MUTEX:
+                    self.__board.set_tile(x, y, tile)
+        for player in self.players:
             player.update_choices(self.calculate_choices(player))
 
     def take_turn(self, display):
@@ -76,7 +81,6 @@ class Game:
         self.__turn += 1
         print('Turn', self.__turn)
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
-        print(isinstance(player, Player))
         with display.HANDLER_LOCK:
             display.set_help_callback(handle_help_clicked_gameplay, (display, player.is_in_check))
 
@@ -108,7 +112,7 @@ class Game:
         if dead_position:
             self.__end(0, 'Dead position - neither player can checkmate.')
 
-    def calculate_choices(self, player, consider_duke_safety=True):
+    def calculate_choices(self, player, consider_duke_safety=True, board=None, players=None):
         """Determines everything a player can legally do, given the current board state.
 
         The game is responsible for telling players what they are allowed to do in a given turn.
@@ -128,25 +132,38 @@ class Game:
             to an infinite loop of each player calling choices() back and forth for each other, wanting to know
             each other's attacks. So, this boolean should be True for calls that are intended to fully recalculate
             what is allowed, but False when only concerned with where the enemy attacks are.
+        :param board: Board object of the board to be used in calculations
+            When checking what would happen if a move were made, the move should be made on a copy of the permanent
+            board state. Then, recalculations can be done by calling this function while passing the cloned board.
+            This allows the code that was testing the move to avoid modifying the actual board.
+        :param players: tuple of Player object of players to be used in calculations
+            Very specifically needed when consider_duke_safety is True but the caller does not want the game state to
+            be permanently modified. Then, like with the board parameter, the caller should make a copy of the players
+            and pass that in here.
         :return: special dict called "choices", whose format is documented in docs/choice_formats.txt
         """
+        if board is None:
+            board = self.__board
         choices = {
             'pull': [],
             'act': {}
         }
         if consider_duke_safety:
-            choices['pull'] = self.__calculate_valid_pull_locations(player)
+            choices['pull'] = self.__calculate_valid_pull_locations(player, board, players)
         for tile in player.tiles_in_play:  # next, we calculate what this player is allowed to do
             if not isinstance(tile, Troop):
                 continue  # for any tiles that are not actually Troop objects, nothing to do
             x, y = tile.coords
-            choices['act'][(x, y)] = self.__calculate_allowed_actions_for_troop(player, tile, consider_duke_safety)
+            choices['act'][(x, y)] = self.__calculate_allowed_actions_for_troop(player, tile, consider_duke_safety,
+                                                                                board, players)
         return choices
 
-    def __calculate_valid_pull_locations(self, player):
+    def __calculate_valid_pull_locations(self, player, board, players):
         """Determines all the (x, y)-coordinates where a player can play a new tile given the current board state.
 
         :param player: Player object of the player whose valid pull locations the game is trying to calculate
+        :param board: Board object of the board to be used in calculation
+        :param players: tuple of Player objects of players to be used in calculation
         :return: list of tuples representing (x, y)-coordinates on the board where new tiles may be played
         """
         return [] if (player is None or not player.has_tiles_in_bag) else [  # funny React-looking return kek
@@ -157,22 +174,24 @@ class Game:
                 )]))
             )
             if (  # where are your gods now
-                0 <= i < 6 and 0 <= j < 6 and self.__board.get_tile(i, j) is None and
+                0 <= i < 6 and 0 <= j < 6 and board.get_tile(i, j) is None and
                 not self.__duke_would_be_endangered(player, {
                     'action_type': 'pull',
                     'src_location': (i, j),
                     'tile': Troop('', player.side, (i, j), True)
-                })
+                }, board, players)
             )
         ]
 
-    def __calculate_allowed_actions_for_troop(self, player, troop, consider_duke_safety):
+    def __calculate_allowed_actions_for_troop(self, player, troop, consider_duke_safety, board, players):
         """Determines all the actions that a troop tile can perform given the current board state.
 
         :param player: Player object of the player to whom the tile belongs
         :param troop: Troop object under consideration
         :param consider_duke_safety: boolean that affects whether the Duke's safety will be taken into account
             See choices() for more details.
+        :param board: Board object of the board to be used in calculation
+        :param players: tuple of Player objects of players to be used in calculation
         :return: special dict called "actions", whose format is documented in docs/choice_formats.txt
         """
         name = troop.name
@@ -190,22 +209,22 @@ class Game:
             if not (0 <= i < 6 and 0 <= j < 6):  # cannot go out of bounds
                 continue
             if item['move'] == 'MOVE':
-                dst_tile = self.__board.get_tile(i, j)
-                if (tile_is_open_or_enemy(dst_tile, player) and path_is_open(self.__board, i, j, dx, dy)
+                dst_tile = board.get_tile(i, j)
+                if (tile_is_open_or_enemy(dst_tile, player) and path_is_open(board, i, j, dx, dy)
                         and not (consider_duke_safety and self.__duke_would_be_endangered(player, {
                             'action_type': 'mov',
                             'src_location': (x, y),
                             'dst_location': (i, j)
-                        }))):
+                        }, board, players))):
                     actions['moves'].append((i, j))  # move is allowed
             elif item['move'] == 'JUMP':
-                dst_tile = self.__board.get_tile(i, j)
+                dst_tile = board.get_tile(i, j)
                 if (tile_is_open_or_enemy(dst_tile, player)
                         and not (consider_duke_safety and self.__duke_would_be_endangered(player, {
                             'action_type': 'mov',
                             'src_location': (x, y),
                             'dst_location': (i, j)
-                        }))):
+                        }, board, players))):
                     actions['moves'].append((i, j))  # jump is allowed
             elif item['move'] == 'SLIDE' or item['move'] == 'JUMP SLIDE':  # jump slide actually uses same logic lol
                 dst_tile = None
@@ -215,14 +234,14 @@ class Game:
                 cur_i = i
                 cur_j = j
                 while 0 <= cur_i < 6 and 0 <= cur_j < 6:
-                    dst_tile = self.__board.get_tile(cur_i, cur_j)
+                    dst_tile = board.get_tile(cur_i, cur_j)
                     if dst_tile is not None:  # slide stops here
                         break  # consider after loop
                     if not (consider_duke_safety and self.__duke_would_be_endangered(player, {
                         'action_type': 'mov',
                         'src_location': (x, y),
                         'dst_location': (cur_i, cur_j)
-                    })):
+                    }, board, players)):
                         actions['moves'].append((cur_i, cur_j))  # slide is allowed
                     step += 1
                     cur_i = i + step * it_x
@@ -232,19 +251,19 @@ class Game:
                             'action_type': 'mov',
                             'src_location': (x, y),
                             'dst_location': (cur_i, cur_j)
-                        }))):
+                        }, board, players))):
                     actions['moves'].append((cur_i, cur_j))  # slide is allowed
             elif item['move'] == 'STRIKE':
-                str_tile = self.__board.get_tile(i, j)
+                str_tile = board.get_tile(i, j)
                 if (tile_is_enemy(str_tile, player)
                         and not (consider_duke_safety and self.__duke_would_be_endangered(player, {
                             'action_type': 'str',
                             'src_location': (x, y),
                             'str_location': (i, j)
-                        }))):
+                        }, board, players))):
                     actions['strikes'].append((i, j))  # strike is allowed
             elif item['move'] == 'COMMAND':
-                cmd_tile = self.__board.get_tile(i, j)
+                cmd_tile = board.get_tile(i, j)
                 if tile_is_open_or_enemy(cmd_tile, player):
                     cmd_dst_locs.append((i, j))  # whether a given teammate can go here will be determined at the end
                 else:
@@ -256,11 +275,11 @@ class Game:
                     'src_location': src_loc,
                     'dst_location': dst_loc,
                     'cmd_location': (x, y),
-                })):
+                }, board, players)):
                     actions['commands'][src_loc].append(dst_loc)  # command is allowed
         return actions
 
-    def __duke_would_be_endangered(self, player, choice):
+    def __duke_would_be_endangered(self, player, choice, board, players):
         """Checks the legality of taking an action in the context of the Duke's safety.
 
         Just like in chess, when a player is in check, they may only take actions that get out of the state.
@@ -272,28 +291,36 @@ class Game:
 
         :param player: Player object of the player considering taking the action
         :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
+        :param board: Board object representing current board state
+        :param players: tuple of Player objects of players to be used in calculations
+            When None, this tells the function to use self.__players.
         :return: boolean representing whether the Duke would be endangered by the action - True is so, False if not
         """
         if choice is None:  # may occur when player does not care about considering the Duke's safety
             return True
+        if players is None:
+            players = self.__players
         would_be_endangered = False
-        cur_in_play = []
-        for p in self.__players:  # save some states before they get modified
-            cur_in_play.append(p.tiles_in_play.copy())
-        self.make_choice(player, choice, True)  # literally make the move
+        all_player_copies = []
+        player_copy = None
+        for p in players:  # make copies to work with
+            all_player_copies.append(copy(p))
+            if p == player:
+                player_copy = all_player_copies[-1]  # the most recently appended is the player of interest
+        all_player_copies = tuple(all_player_copies)
+        board_copy = board.copy(all_player_copies)
+        self.make_choice(player_copy, choice, True, board_copy, all_player_copies)  # literally make the move
         all_enemy_attacks = set()
-        for other in self.__players:  # recalculate the allowed moves for the opponent(s)
-            if player != other:
-                other_choices = self.calculate_choices(other, False)  # will include attacks that endanger their Duke
+        for other_copy in all_player_copies:  # recalculate the allowed moves for the opponent(s)
+            if player_copy != other_copy:
+                other_choices = self.calculate_choices(other_copy, False, board_copy, all_player_copies)
                 all_enemy_attacks = all_enemy_attacks.union(get_attacks(other_choices))
-        if player.duke.coords in all_enemy_attacks:
+        if player_copy.duke.coords in all_enemy_attacks:
             would_be_endangered = True
-        for i in range(len(self.__players)):  # restore saved states
-            self.__players[i].set_tiles_in_play(cur_in_play[i])
-        self.undo_choice(player)
+        self.__actions_taken.pop()  # since self.make_choice() appends, need to undo move here
         return would_be_endangered
 
-    def make_choice(self, player, choice, considering=False):
+    def make_choice(self, player, choice, considering=False, board=None, players=None):
         """Executes a given move on the board.
 
         The game is responsible for managing the board.
@@ -302,21 +329,29 @@ class Game:
 
         :param player: Player object of the player making the move
         :param choice: special dict called "choice", whose format is documented in docs/choice_formats.txt
-        :param considering: boolean that should be True if the choice is expected to be undone later
+        :param considering: boolean that should be True if the choice is experimental, i.e., not meant to be permanent
+            When True, you should also include the next two parameters.
+        :param board: Board object of the board to be updated
+            Pass a copy of self.__board here if you don't want to modify the actual board.
+        :param players: tuple of Player objects of all players in the game
+            Pass a copy of self.__players here if you don't want to modify the actual players.
         """
+        if board is None or players is None:
+            board = self.__board
+            players = self.__players
         if choice['action_type'] == 'pull':
-            self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], choice['tile'])
+            board.set_tile(choice['src_location'][0], choice['src_location'][1], choice['tile'])
             if not considering:
                 self.__non_meaningful_moves_counter = 0  # pulling is a meaningful move
         else:
             choice['tile'] = None
-            src_tile = self.__board.get_tile(choice['src_location'][0], choice['src_location'][1])
+            src_tile = board.get_tile(choice['src_location'][0], choice['src_location'][1])
             if choice['action_type'] != 'str':  # 'mov' or 'cmd'
-                dst_tile = self.__board.get_tile(choice['dst_location'][0], choice['dst_location'][1])
+                dst_tile = board.get_tile(choice['dst_location'][0], choice['dst_location'][1])
                 if dst_tile is not None:  # if an enemy tile is in the destination location
-                    enemy_player = self.__players[dst_tile.player_side - 1]
+                    enemy_player = players[dst_tile.player_side - 1]
                     dst_tile = enemy_player.remove_from_play(choice['dst_location'][0], choice['dst_location'][1])
-                    self.__players[player.side - 1].capture(dst_tile)
+                    players[player.side - 1].capture(dst_tile)
                     choice['tile'] = dst_tile
                     if not considering:
                         self.__non_meaningful_moves_counter = 0  # capturing is a meaningful move
@@ -325,27 +360,26 @@ class Game:
                 if choice['action_type'] == 'mov':
                     src_tile.flip()
                 else:
-                    cmd_tile = self.__board.get_tile(choice['cmd_location'][0], choice['cmd_location'][1])
+                    cmd_tile = board.get_tile(choice['cmd_location'][0], choice['cmd_location'][1])
                     cmd_tile.flip()
-                    self.__board.set_tile(choice['cmd_location'][0], choice['cmd_location'][1], cmd_tile)
-                self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], None)
+                    board.set_tile(choice['cmd_location'][0], choice['cmd_location'][1], cmd_tile)
+                board.set_tile(choice['src_location'][0], choice['src_location'][1], None)
                 src_tile.move(choice['dst_location'][0], choice['dst_location'][1])
-                self.__board.set_tile(choice['dst_location'][0], choice['dst_location'][1], src_tile)
+                board.set_tile(choice['dst_location'][0], choice['dst_location'][1], src_tile)
             else:  # 'str'
-                str_tile = self.__board.get_tile(choice['str_location'][0], choice['str_location'][1])
-                enemy_player = self.__players[str_tile.player_side - 1]
+                str_tile = board.get_tile(choice['str_location'][0], choice['str_location'][1])
+                enemy_player = players[str_tile.player_side - 1]
                 str_tile = enemy_player.remove_from_play(choice['str_location'][0], choice['str_location'][1])
-                self.__players[player.side - 1].capture(str_tile)
+                players[player.side - 1].capture(str_tile)
                 choice['tile'] = str_tile
                 if not considering:
                     self.__non_meaningful_moves_counter = 0  # striking (and capturing) is a meaningful move
                 src_tile.flip()
-                self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], src_tile)
-                self.__board.set_tile(choice['str_location'][0], choice['str_location'][1], None)  # funny story here
+                board.set_tile(choice['src_location'][0], choice['src_location'][1], src_tile)
+                board.set_tile(choice['str_location'][0], choice['str_location'][1], None)  # funny story here
         self.__actions_taken.append(choice)  # log the choice made on this turn
-        return True
 
-    def undo_choice(self, player):
+    def undo_choice(self, player, board):
         """Undoes the most recent action carried out on the board.
 
         Note that this does NOT guarantee that other object data modified by make_choice() is undone.
@@ -355,30 +389,31 @@ class Game:
             move, so that they could restore it as needed afterwards.
 
         :param player: Player object of the player who made the last move
+        :param board: Board object of the board on which the action is being undone
         """
         choice = self.__actions_taken.pop()
         if choice['action_type'] == 'pull':
-            self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], None)
+            board.set_tile(choice['src_location'][0], choice['src_location'][1], None)
         else:
             captured_tile = None
             if choice['tile'] is not None:
                 captured_tile = player.undo_last_capture()
-            src_tile = self.__board.get_tile(choice['src_location'][0], choice['src_location'][1])
+            src_tile = board.get_tile(choice['src_location'][0], choice['src_location'][1])
             if choice['action_type'] != 'str':  # 'mov' or 'cmd'
-                dst_tile = self.__board.get_tile(choice['dst_location'][0], choice['dst_location'][1])
+                dst_tile = board.get_tile(choice['dst_location'][0], choice['dst_location'][1])
                 if choice['action_type'] == 'mov':
                     dst_tile.flip()
                 else:
-                    cmd_tile = self.__board.get_tile(choice['cmd_location'][0], choice['cmd_location'][1])
+                    cmd_tile = board.get_tile(choice['cmd_location'][0], choice['cmd_location'][1])
                     cmd_tile.flip()
-                    self.__board.set_tile(choice['cmd_location'][0], choice['cmd_location'][1], cmd_tile)
-                self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], dst_tile)
+                    board.set_tile(choice['cmd_location'][0], choice['cmd_location'][1], cmd_tile)
+                board.set_tile(choice['src_location'][0], choice['src_location'][1], dst_tile)
                 dst_tile.move(choice['src_location'][0], choice['src_location'][1])
-                self.__board.set_tile(choice['dst_location'][0], choice['dst_location'][1], captured_tile)
+                board.set_tile(choice['dst_location'][0], choice['dst_location'][1], captured_tile)
             else:  # 'str'
                 src_tile.flip()
-                self.__board.set_tile(choice['src_location'][0], choice['src_location'][1], src_tile)
-                self.__board.set_tile(choice['str_location'][0], choice['str_location'][1], captured_tile)
+                board.set_tile(choice['src_location'][0], choice['src_location'][1], src_tile)
+                board.set_tile(choice['str_location'][0], choice['str_location'][1], captured_tile)
 
     @property
     def is_finished(self):
@@ -474,6 +509,10 @@ class Game:
         """
         self.__winner = status
         if status > 0:
-            print('Checkmate (turn ', str(self.__turn), ')! ', reason, sep='')
+            print(f'Checkmate (turn {str(self.__turn)})! {reason}')
         elif status == 0:
-            print('Draw (turn ', str(self.__turn), ')! ', reason, sep='')
+            print(f'Draw (turn {str(self.__turn)})! {reason}')
+        time_taken = time() - self.__start_time
+        minutes = int(time_taken // 60)
+        seconds = round(time_taken - minutes * 60)
+        print(f'The game took {minutes} minutes and {seconds} seconds to complete.')

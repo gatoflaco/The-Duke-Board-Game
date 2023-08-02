@@ -68,6 +68,7 @@ CMD_HIGHLIGHT = Color(0, 255, 255, 50)  # cyan
 with open('data/ai/troop_weights.json') as f:
     TROOP_WEIGHTS = load(f)
 MEAN_PULL_WEIGHT = sum([value['1'] for value in TROOP_WEIGHTS.values()])//len(TROOP_WEIGHTS)
+MIN_TURN_TIME = 2
 
 # bag constants
 BAG_PNG = image.load('assets/pngs/bag.png')  # png for player bags

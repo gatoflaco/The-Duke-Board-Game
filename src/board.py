@@ -9,6 +9,8 @@ import pygame
 from src.display import Theme
 from src.tile import Tile
 from src.constants import TEXT_BUFFER, BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, FILES, RANKS, TILE_SIZE
+from copy import copy
+from itertools import product
 
 
 class Board:
@@ -20,6 +22,25 @@ class Board:
 
     def __init__(self):
         self.__grid = [[None] * 6 for _ in range(6)]
+
+    def copy(self, players):
+        """Unusual implementation of self cloning that requires players to be cloned separately.
+
+        Because players and the board they are playing on share references to their tiles, one or the other must be
+        solely responsible for copying the tile objects referenced by both.
+
+        :param players: tuple of Player objects of players whose tiles should be played on the new board
+            As noted in the description, the expectation is that these Player objects are themselves copies of others.
+        :return:
+        """
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__grid = [[None] * 6 for _ in range(6)]
+        for player in players:
+            for tile in player.tiles_in_play:
+                x, y = tile.coords
+                result.set_tile(x, y, tile)
+        return result
 
     def set_tile(self, x, y, tile):
         self.__grid[x][y] = tile

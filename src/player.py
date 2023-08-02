@@ -5,10 +5,13 @@ Isaac Jung
 This module contains all code related to players in a given game of the Duke.
 """
 
+from src.display import Display
 from src.bag import Bag
 from src.tile import Troop
 from src.constants import BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE
+from copy import copy
 from random import randrange, shuffle
+from time import sleep
 
 
 class Player:
@@ -28,6 +31,7 @@ class Player:
         There is no such thing as a player 0, so this should start at 1 and increment from there.
         Must be unique from the other player(s) in the game.
     """
+    PLAYER = None  # gets set when a non-AI player is taking their turn
 
     def __init__(self, side, name=''):
         self._side = side
@@ -51,6 +55,27 @@ class Player:
             },
             'act': {}
         }
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result._side = self._side
+        result._name = self._name
+        result._in_play = []
+        for tile in self._in_play:
+            result._in_play.append(copy(tile))
+        result._bag = copy(self._bag)
+        result._captured = []
+        for tile in self._captured:
+            result._captured.append(copy(tile))
+        result._duke = None
+        for troop in result._in_play:
+            if troop.name == 'Duke':
+                result._duke = troop
+                break
+        result._in_check = self._in_check
+        result._choices = self._choices.copy()
+        return result
 
     def setup_phase(self):
         """Runs the setup phase for this player.
@@ -170,50 +195,57 @@ class Player:
         highlighted2 = []  # filled out when a highlighted1 location is clicked
         highlighted3 = []  # filled out only when a clicked highlighted2 location is a teammate to command
         # TODO: get user input on what they want to do instead of hard coding
+        Player.PLAYER = self
+        Display.MUTEX.release()  # should have been acquired before calling this function
+        while(Player.PLAYER == self):
+            sleep(1)
+        Player.PLAYER = None
+        #Display.MUTEX.acquire()
 
-        if len(self._choices['pull']) != 0 and randrange(0, 10) < 2:
-            x, y = self._choices['pull'][0]
-            tile = self.play_new_troop_tile(x, y)
-            return {
-                'action_type': 'pull',
-                'src_location': tile.coords,
-                'tile': tile
-            }
-        else:  # MUST be at least one valid 'act' choice (otherwise game would have stopped due to checkmate)
-            troop_locs = list(self._choices['act'].keys())
-            shuffle(troop_locs)
-            for troop_loc in troop_locs:
-                for teammate_loc in self._choices['act'][troop_loc]['commands']:
-                    if len(self._choices['act'][troop_loc]['commands'][teammate_loc]) != 0:
-                        return {
-                            'action_type': 'cmd',
-                            'src_location': teammate_loc,
-                            'dst_location': self._choices['act'][troop_loc]['commands'][teammate_loc][
-                                randrange(0, len(self._choices['act'][troop_loc]['commands'][teammate_loc]))],
-                            'cmd_location': troop_loc,
-                        }
-                if len(self._choices['act'][troop_loc]['strikes']) != 0:
-                    return {
-                        'action_type': 'str',
-                        'src_location': troop_loc,
-                        'str_location': self._choices['act'][troop_loc]['strikes'][
-                            randrange(0, len(self._choices['act'][troop_loc]['strikes']))]
-                    }
-                if len(self._choices['act'][troop_loc]['moves']) != 0:
-                    return {
-                        'action_type': 'mov',
-                        'src_location': troop_loc,
-                        'dst_location': self._choices['act'][troop_loc]['moves'][
-                            randrange(0, len(self._choices['act'][troop_loc]['moves']))]
-                    }
-        if len(self._choices['pull']):
-            x, y = self._choices['pull'][0]
-            tile = self.play_new_troop_tile(x, y)
-            return {
-                'action_type': 'pull',
-                'src_location': tile.coords,
-                'tile': tile
-            }
+
+        # if len(self._choices['pull']) != 0 and randrange(0, 10) < 2:
+        #     x, y = self._choices['pull'][0]
+        #     tile = self.play_new_troop_tile(x, y)
+        #     return {
+        #         'action_type': 'pull',
+        #         'src_location': tile.coords,
+        #         'tile': tile
+        #     }
+        # else:  # MUST be at least one valid 'act' choice (otherwise game would have stopped due to checkmate)
+        #     troop_locs = list(self._choices['act'].keys())
+        #     shuffle(troop_locs)
+        #     for troop_loc in troop_locs:
+        #         for teammate_loc in self._choices['act'][troop_loc]['commands']:
+        #             if len(self._choices['act'][troop_loc]['commands'][teammate_loc]) != 0:
+        #                 return {
+        #                     'action_type': 'cmd',
+        #                     'src_location': teammate_loc,
+        #                     'dst_location': self._choices['act'][troop_loc]['commands'][teammate_loc][
+        #                         randrange(0, len(self._choices['act'][troop_loc]['commands'][teammate_loc]))],
+        #                     'cmd_location': troop_loc,
+        #                 }
+        #         if len(self._choices['act'][troop_loc]['strikes']) != 0:
+        #             return {
+        #                 'action_type': 'str',
+        #                 'src_location': troop_loc,
+        #                 'str_location': self._choices['act'][troop_loc]['strikes'][
+        #                     randrange(0, len(self._choices['act'][troop_loc]['strikes']))]
+        #             }
+        #         if len(self._choices['act'][troop_loc]['moves']) != 0:
+        #             return {
+        #                 'action_type': 'mov',
+        #                 'src_location': troop_loc,
+        #                 'dst_location': self._choices['act'][troop_loc]['moves'][
+        #                     randrange(0, len(self._choices['act'][troop_loc]['moves']))]
+        #             }
+        # if len(self._choices['pull']):
+        #     x, y = self._choices['pull'][0]
+        #     tile = self.play_new_troop_tile(x, y)
+        #     return {
+        #         'action_type': 'pull',
+        #         'src_location': tile.coords,
+        #         'tile': tile
+        #     }
 
     def play_new_troop_tile(self, x, y, tile=None):
         """Pulls a random troop from the bag and puts it into play at location (x, y).

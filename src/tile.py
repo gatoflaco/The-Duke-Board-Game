@@ -7,6 +7,7 @@ This module contains all code related to tiles that are placed on the board.
 
 from pygame import SRCALPHA, Surface, transform
 from src.constants import BOARD_SIZE, PLAYER_COLORS, TILE_PNGS, TILE_SIZE
+from copy import copy
 
 
 def highlight_locations(display, locations, highlight):
@@ -50,6 +51,15 @@ class Tile:
             self._image.blit(self._png, (0, 0))  # draw png onto surface, cropping off extra pixels
         self._coords = coords
         self._player_side = 0  # represents that the tile does not belong to any player
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result._name = self._name
+        result._png = self._png
+        result._image = copy(self._image)
+        result._coords = self._coords
+        result._player_side = self._player_side
 
     @property
     def name(self):
@@ -120,6 +130,19 @@ class Troop(Tile):
         self.__in_play = in_play
         self.__is_captured = False
         self.__side = 1
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result._name = self._name
+        result._png = self._png
+        result._image = copy(self._image)
+        result._coords = self._coords
+        result._player_side = self._player_side
+        result.__in_play = self.__in_play
+        result.__is_captured = self.__is_captured
+        result.__side = self.__side
+        return result
 
     def set_in_play(self, in_play=True):
         self.__in_play = in_play

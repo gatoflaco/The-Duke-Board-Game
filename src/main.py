@@ -29,14 +29,10 @@ def main_menu_loop():
 
 
 def game_loop():
-    with Display.MUTEX:
-        game.setup(display)
-    clock.tick(1/10)
+    game.setup(display)
     while not game.is_finished:
-        clock.tick(1)  # purposely delay, so that we can see the next line happen live
-        Display.MUTEX.acquire()
+        # clock.tick(1)  # purposely delay, so that we can see the next line happen live
         game.take_turn(display)
-        Display.MUTEX.release()
 
 
 pygame.init()

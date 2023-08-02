@@ -7,6 +7,7 @@ This module contains all code related to bags that hold tiles.
 
 from pygame import SRCALPHA, Surface
 from constants import BUFFER, TEXT_FONT_SIZE, BAG_PNG, BAG_SIZE
+from copy import copy
 import random
 
 
@@ -40,6 +41,17 @@ class Bag:
         self.__state = Bag.SELECTABLE
         self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)  # creates transparent background
         self.__image.blit(BAG_PNG, (0, 0))  # draw png onto surface, cropping off extra pixels
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__tiles = []
+        for tile in self.__tiles:
+            result.__tiles.append(copy(tile))
+        result.__side = self.__side
+        result.__state = self.__state
+        result.__image = self.__image
+        return result
 
     def pull(self):
         """Performs the pull action, retrieving a random object from within the bag.
