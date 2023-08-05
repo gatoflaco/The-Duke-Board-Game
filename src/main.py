@@ -9,8 +9,9 @@ This module contains the main logic for starting up the game.
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame
-from src.game import Game
 from src.display import Display
+from src.game import Game
+from src.player import Player
 from src.constants import GAME_WINDOW_ICON, GAME_WINDOW_TITLE
 from threading import Thread
 
@@ -46,16 +47,25 @@ game = Game()
 Thread(target=main_menu_loop, daemon=True).start()
 
 while not Global.CRASHED:
-    display.handle_component_hovers()
+    x, y = pygame.mouse.get_pos()
+    display.handle_component_hovers(x, y)
+    if isinstance(Player.PLAYER, Player):
+        game.board.handle_tile_hovers(display, x, y)
+        Player.PLAYER.handle_clickable_hovers(display, x, y)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             # TODO: ask for confirmation, warning of potential lost progress
             Global.CRASHED = True
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if isinstance(Player.PLAYER, Player):
+                game.board.handle_tile_held()
         if event.type == pygame.MOUSEBUTTONUP:
             if display.component_hovered:
-                with Display.MUTEX:
-                    display.handle_component_clicks()
+                display.handle_component_clicks()
+            elif isinstance(Player.PLAYER, Player):
+                game.board.handle_tile_clicked()
+                Player.PLAYER.handle_clickable_clicked()
         if event.type == pygame.VIDEORESIZE:
             width, height = event.size
             display.handle_resize(width, height)

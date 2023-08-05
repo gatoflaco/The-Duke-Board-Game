@@ -5,13 +5,29 @@ Isaac Jung
 This module contains all code related to players in a given game of the Duke.
 """
 
-from src.display import Display
+from pygame import SRCALPHA, Surface
 from src.bag import Bag
 from src.tile import Troop
-from src.constants import BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE
+from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE, TILE_TYPES, TILE_SIZE,
+                           STARTING_TROOPS, BAG_SIZE)
 from copy import copy
-from random import randrange, shuffle
 from time import sleep
+
+
+def handle_offer_draw_hovers(display, x, y):
+    if Player.OFFER_DRAW_IMAGE.get_rect().collidepoint((x - BUFFER,
+                                                        y - (display.height - BUFFER - OFFER_DRAW_SIZE))):
+        Player.OFFER_DRAW_HOVERED = True
+    else:
+        Player.OFFER_DRAW_HOVERED = False
+
+
+def handle_forfeit_hovers(display, x, y):
+    if Player.FORFEIT_IMAGE.get_rect().collidepoint(x - (OFFER_DRAW_SIZE + 2 * BUFFER),
+                                                    y - (display.height - BUFFER - FORFEIT_SIZE)):
+        Player.FORFEIT_HOVERED = True
+    else:
+        Player.FORFEIT_HOVERED = False
 
 
 class Player:
@@ -30,10 +46,21 @@ class Player:
         Integer ID of the player, corresponding to which side they're on.
         There is no such thing as a player 0, so this should start at 1 and increment from there.
         Must be unique from the other player(s) in the game.
+    name : string (optional; 'Duke' by default)
+        Name to be displayed in the game.
     """
     PLAYER = None  # gets set when a non-AI player is taking their turn
+    FILE = '-'  # responds to player typing a letter a through f
+    RANK = '-'  # responds to player typing a number 1 through 6
+    SELECTED = None  # Tile object selected by the current player
+    COMMANDED = None  # Tile object being commanded by SELECTED
+    CHOICE = None  # holds the "choice" dict determined by UI input for the current player
+    OFFER_DRAW_IMAGE = Surface((OFFER_DRAW_SIZE, OFFER_DRAW_SIZE), SRCALPHA)
+    OFFER_DRAW_HOVERED = False
+    FORFEIT_IMAGE = Surface((FORFEIT_SIZE, FORFEIT_SIZE), SRCALPHA)
+    FORFEIT_HOVERED = False
 
-    def __init__(self, side, name=''):
+    def __init__(self, side, name='Duke'):
         self._side = side
         self._name = name
         all_troop_names = []
@@ -111,6 +138,10 @@ class Player:
     def has_tiles_in_bag(self):
         return self._bag.size != 0
 
+    @property
+    def bag_clicked(self):
+        return self._bag.state == Bag.SELECTED
+
     def capture(self, tile):
         self._captured.append(tile)
 
@@ -150,7 +181,6 @@ class Player:
             display.write(self._name,
                           (display.width - BUFFER,
                            display.height - BAG_SIZE - 2 * BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
-            # display.blit() display.width - BAG_SIZE - BUFFER
             dx = 0
             dy = 0
             for tile in self._captured:
@@ -162,6 +192,15 @@ class Player:
                 if dy > TILE_SIZE * 2:
                     dx = TILE_SIZE + BUFFER
                     dy = 0
+            display.draw(Surface((TILE_SIZE, TILE_SIZE), SRCALPHA), (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                                                     display.height - TILE_SIZE - BUFFER))
+            if Player.PLAYER == self:
+                if Player.COMMANDED is not None:
+                    Player.COMMANDED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                          display.height - TILE_SIZE - BUFFER)
+                elif Player.SELECTED is not None:
+                    Player.SELECTED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                         display.height - TILE_SIZE - BUFFER)
         else:
             display.write('Player 2',
                           (BUFFER,
@@ -179,6 +218,12 @@ class Player:
                 if dy > TILE_SIZE * 2:
                     dx = TILE_SIZE + BUFFER
                     dy = 0
+            display.draw(Surface((TILE_SIZE, TILE_SIZE), SRCALPHA), (BAG_SIZE + 2 * BUFFER, BUFFER))
+            if Player.PLAYER == self:
+                if Player.COMMANDED is not None:
+                    Player.COMMANDED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
+                elif Player.SELECTED is not None:
+                    Player.SELECTED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
         self._bag.draw(display)
 
     def take_turn(self):
@@ -191,61 +236,19 @@ class Player:
 
         :return: special dict called "choice", whose format is documented in docs/choice_formats.txt
         """
-        highlighted1 = []  # initial list of valid (x, y) locations
-        highlighted2 = []  # filled out when a highlighted1 location is clicked
-        highlighted3 = []  # filled out only when a clicked highlighted2 location is a teammate to command
         # TODO: get user input on what they want to do instead of hard coding
         Player.PLAYER = self
-        Display.MUTEX.release()  # should have been acquired before calling this function
-        while(Player.PLAYER == self):
-            sleep(1)
+        while(Player.CHOICE is None):
+            sleep(0.1)  # wait for UI input
         Player.PLAYER = None
-        #Display.MUTEX.acquire()
-
-
-        # if len(self._choices['pull']) != 0 and randrange(0, 10) < 2:
-        #     x, y = self._choices['pull'][0]
-        #     tile = self.play_new_troop_tile(x, y)
-        #     return {
-        #         'action_type': 'pull',
-        #         'src_location': tile.coords,
-        #         'tile': tile
-        #     }
-        # else:  # MUST be at least one valid 'act' choice (otherwise game would have stopped due to checkmate)
-        #     troop_locs = list(self._choices['act'].keys())
-        #     shuffle(troop_locs)
-        #     for troop_loc in troop_locs:
-        #         for teammate_loc in self._choices['act'][troop_loc]['commands']:
-        #             if len(self._choices['act'][troop_loc]['commands'][teammate_loc]) != 0:
-        #                 return {
-        #                     'action_type': 'cmd',
-        #                     'src_location': teammate_loc,
-        #                     'dst_location': self._choices['act'][troop_loc]['commands'][teammate_loc][
-        #                         randrange(0, len(self._choices['act'][troop_loc]['commands'][teammate_loc]))],
-        #                     'cmd_location': troop_loc,
-        #                 }
-        #         if len(self._choices['act'][troop_loc]['strikes']) != 0:
-        #             return {
-        #                 'action_type': 'str',
-        #                 'src_location': troop_loc,
-        #                 'str_location': self._choices['act'][troop_loc]['strikes'][
-        #                     randrange(0, len(self._choices['act'][troop_loc]['strikes']))]
-        #             }
-        #         if len(self._choices['act'][troop_loc]['moves']) != 0:
-        #             return {
-        #                 'action_type': 'mov',
-        #                 'src_location': troop_loc,
-        #                 'dst_location': self._choices['act'][troop_loc]['moves'][
-        #                     randrange(0, len(self._choices['act'][troop_loc]['moves']))]
-        #             }
-        # if len(self._choices['pull']):
-        #     x, y = self._choices['pull'][0]
-        #     tile = self.play_new_troop_tile(x, y)
-        #     return {
-        #         'action_type': 'pull',
-        #         'src_location': tile.coords,
-        #         'tile': tile
-        #     }
+        Player.SELECTED = None
+        Player.COMMANDED = None
+        choice = Player.CHOICE
+        if choice['action_type'] == 'pull':  # need to actually draw the new tile here
+            x, y = choice['src_location']
+            choice['tile'] = self.play_new_troop_tile(x, y)
+        Player.CHOICE = None
+        return choice
 
     def play_new_troop_tile(self, x, y, tile=None):
         """Pulls a random troop from the bag and puts it into play at location (x, y).
@@ -296,3 +299,20 @@ class Player:
             if i == x and j == y:
                 return troop_tile
         return None  # not found
+
+    def handle_clickable_hovers(self, display, x, y):
+        self._bag.handle_bag_hovers(display, x, y, self._side)
+        handle_offer_draw_hovers(display, x, y)
+        handle_forfeit_hovers(display, x, y)
+        # note that tile hovers are handled by the board, because you may want to hover over opponent tiles
+
+    def handle_clickable_clicked(self):
+        if self._bag.state == Bag.SELECTED:
+            self._bag.set_state(Bag.SELECTABLE)
+        elif self._bag.hovered:
+            if self._bag.state == Bag.SELECTABLE:
+                self._bag.set_state(Bag.SELECTED)
+        if Player.OFFER_DRAW_HOVERED:
+            pass  # TODO
+        if Player.FORFEIT_HOVERED:
+            pass  # TODO

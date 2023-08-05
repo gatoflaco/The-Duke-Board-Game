@@ -27,8 +27,8 @@ BG_COLOR_LIGHT_MODE = Color(232, 230, 220)
 TEXT_COLOR_LIGHT_MODE = Color(15, 15, 15)
 BG_COLOR_DARK_MODE = Color(56, 52, 52)
 TEXT_COLOR_DARK_MODE = Color(215, 215, 225)
-TEXT_FONT_SIZE = 16
-TEXT_BUFFER = 4
+TEXT_FONT_SIZE = 18
+TEXT_BUFFER = 6
 
 # game constants
 OFFER_DRAW_PNG = image.load('assets/pngs/draw.png')
@@ -42,11 +42,15 @@ BOARD_DARK_PNG = image.load('assets/pngs/board_dark.png')  # for dark mode theme
 BOARD_SIZE = BOARD_PNG.get_width()  # width and height of the board
 FILES = ['A', 'B', 'C', 'D', 'E', 'F']
 RANKS = ['1', '2', '3', '4', '5', '6']
+HOVERED_HIGHLIGHT = Color(255, 215, 0)  # gold
+MOV_HIGHLIGHT = Color(0, 255, 190)  # sea green
+STR_HIGHLIGHT = Color(255, 10, 10)  # red
+CMD_HIGHLIGHT = Color(255, 105, 0)  # orange
 
 # player constants
 PLAYER_COLORS = [  # list of colors associated with each player
     Color(100, 150, 255),  # blue
-    Color(255, 10, 10)  # red
+    Color(0, 255, 25)  # green
 ]
 
 # tile constants
@@ -60,9 +64,6 @@ TILE_SIZE = 128  # width and height of a single tile, must be small enough to fi
 STARTING_TROOPS = ['Duke', 'Footman', 'Footman']
 with open('data/tiles/movements.json') as f:
     TROOP_MOVEMENTS = load(f)  # data structure listing all troop movements
-MOV_HIGHLIGHT = Color(255, 215, 0, 50)  # gold
-STR_HIGHLIGHT = Color(150, 255, 100, 50)  # green
-CMD_HIGHLIGHT = Color(0, 255, 255, 50)  # cyan
 
 # ai constants
 with open('data/ai/troop_weights.json') as f:

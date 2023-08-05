@@ -5,7 +5,7 @@ Isaac Jung
 This module contains all the code related to the UI.
 """
 
-from pygame import display, font, mouse, RESIZABLE, SRCALPHA, Surface
+from pygame import display, font, RESIZABLE, SRCALPHA, Surface
 from src.constants import (DISPLAY_WIDTH, DISPLAY_HEIGHT, BUFFER, THEME_TOGGLE_PNG, THEME_TOGGLE_WIDTH,
                            THEME_TOGGLE_HEIGHT, SETTINGS_PNG, SETTINGS_SIZE, HELP_PNG, HELP_SIZE, BG_COLOR_LIGHT_MODE,
                            TEXT_COLOR_LIGHT_MODE, BG_COLOR_DARK_MODE, TEXT_COLOR_DARK_MODE, TEXT_FONT_SIZE)
@@ -200,8 +200,7 @@ class Display:
     def component_hovered(self):
         return True in [component['is_hovered'] for component in self.__components.values()]  # I hate this
 
-    def handle_component_hovers(self):
-        x, y = mouse.get_pos()
+    def handle_component_hovers(self, x, y):
         for component in self.__components.values():
             component['is_hovered'] = component['image'].get_rect().collidepoint(
                 (x - component['location'][0], y - component['location'][1]))

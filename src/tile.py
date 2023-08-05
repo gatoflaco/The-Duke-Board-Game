@@ -10,25 +10,6 @@ from src.constants import BOARD_SIZE, PLAYER_COLORS, TILE_PNGS, TILE_SIZE
 from copy import copy
 
 
-def highlight_locations(display, locations, highlight):
-    """Puts a low opacity highlight over tiles at the given locations.
-
-    Used to show the player where a selected tile can take various actions.
-    Different colors should be used for different types of actions.
-
-    :param display: Display object containing the main game window
-    :param locations: list of (x, y)-coordinates over which the given highlight should be drawn on the board
-    :param highlight: pygame.color.Color to be used for highlighting
-    """
-    for location in locations:
-        shader = Surface((TILE_SIZE + 2, TILE_SIZE + 2))
-        shader.fill(highlight)
-        shader.set_alpha(5)
-        x = (display.width - BOARD_SIZE) // 2 + 4 + (TILE_SIZE + 6) * location[0]
-        y = BOARD_SIZE - (TILE_SIZE + 6 + (TILE_SIZE + 6) * location[1])
-        display.blit(shader, (x, y))
-
-
 class Tile:
     """Base class for all tiles.
 
@@ -93,6 +74,10 @@ class Tile:
             y = BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self._coords[1])
         self._image.unlock()
         display.blit(transform.rotate(self._image, 180) if rotated else self._image, (x, y))
+
+    @property
+    def image(self):
+        return self._image
 
 
 class Troop(Tile):

@@ -48,6 +48,7 @@ class Bag:
         result.__tiles = []
         for tile in self.__tiles:
             result.__tiles.append(copy(tile))
+        result.__hovered = self.__hovered
         result.__side = self.__side
         result.__state = self.__state
         result.__image = self.__image
@@ -77,8 +78,9 @@ class Bag:
     def tiles(self):
         return self.__tiles
 
-    def set_hovered(self, hovered=True):
-        self.__hovered = hovered
+    @property
+    def hovered(self):
+        return self.__hovered
 
     def set_state(self, state):
         if state == self.__state or state not in [Bag.SELECTABLE, Bag.SELECTED, Bag.UNSELECTABLE, Bag.EMPTY]:
@@ -87,7 +89,7 @@ class Bag:
         if state == Bag.SELECTABLE:
             self.__image.blit(BAG_PNG, (0, 0))
         elif state == Bag.SELECTED:
-            self.__image.blit(BAG_PNG, (-BAG_SIZE, 0))
+            self.__image.blit(BAG_PNG, (-BAG_SIZE * 2, 0))
         elif state == Bag.UNSELECTABLE:
             self.__image.blit(BAG_PNG, (0, -BAG_SIZE))
         elif state == Bag.EMPTY:
@@ -121,3 +123,17 @@ class Bag:
                           (x + BAG_SIZE, y - BUFFER - TEXT_FONT_SIZE), True)
         else:
             display.write('{:02d} tiles remaining'.format(len(self.__tiles)), (x, y + BAG_SIZE + BUFFER))
+
+    def handle_bag_hovers(self, display, x, y, side):
+        if self.__state == Bag.SELECTABLE:
+            self.__image = Surface((BAG_SIZE, BAG_SIZE), SRCALPHA)
+            if self.__image.get_rect().collidepoint(
+                    (x - (display.width - BAG_SIZE - BUFFER if side == 1 else BUFFER),
+                     y - (display.height - BAG_SIZE - BUFFER if side == 1 else BUFFER))):
+                self.__hovered = True
+                self.__image.blit(BAG_PNG, (-BAG_SIZE, 0))
+            else:
+                self.__hovered = False
+                self.__image.blit(BAG_PNG, (0, 0))
+            return
+        self.__hovered = False

@@ -5,13 +5,15 @@ Isaac Jung
 This module contains all the code related to playing a game of The Duke.
 """
 
-from src.display import Display
+from pygame import SRCALPHA, Surface
+from src.display import Display, Theme
 from src.board import Board
 from src.player import Player
 from src.ai import Difficulty, AI
 from src.tile import Troop
 from src.util import *
-from src.constants import TROOP_MOVEMENTS
+from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_PNG, OFFER_DRAW_SIZE, FORFEIT_PNG,
+                           FORFEIT_SIZE, TROOP_MOVEMENTS)
 from copy import copy
 from itertools import chain
 from time import time
@@ -28,8 +30,8 @@ class Game:
     def __init__(self):
         self.__board = Board()
         self.__turn = 0
-        player1 = AI(1, self, Difficulty.NORMAL)
-        player2 = AI(2, self, Difficulty.NORMAL, 5731187400411910005)
+        player1 = Player(1)
+        player2 = Player(2)
         self.__players = (player1, player2)
         self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
@@ -56,7 +58,36 @@ class Game:
         self.__board.draw(display)
         for player in self.__players:
             player.update(display)
-        #display.blit()
+        if isinstance(Player.PLAYER, Player):
+            if Player.OFFER_DRAW_HOVERED:
+                Player.OFFER_DRAW_IMAGE.blit(OFFER_DRAW_PNG, (-OFFER_DRAW_SIZE,
+                                                              -OFFER_DRAW_SIZE if display.theme == Theme.DARK else 0))
+            else:
+                Player.OFFER_DRAW_IMAGE.blit(OFFER_DRAW_PNG, (0,
+                                                              -OFFER_DRAW_SIZE if display.theme == Theme.DARK else 0))
+            if Player.FORFEIT_HOVERED:
+                Player.FORFEIT_IMAGE.blit(FORFEIT_PNG, (-FORFEIT_SIZE,
+                                                        -FORFEIT_SIZE if display.theme == Theme.DARK else 0))
+            else:
+                Player.FORFEIT_IMAGE.blit(FORFEIT_PNG, (0, -FORFEIT_SIZE if display.theme == Theme.DARK else 0))
+        else:
+            Player.OFFER_DRAW_IMAGE.blit(OFFER_DRAW_PNG, (-OFFER_DRAW_SIZE * 2,
+                                                          -OFFER_DRAW_SIZE if display.theme == Theme.DARK else 0))
+            Player.FORFEIT_IMAGE.blit(FORFEIT_PNG, (-FORFEIT_SIZE * 2,
+                                                    -FORFEIT_SIZE if display.theme == Theme.DARK else 0))
+        display.blit(Player.OFFER_DRAW_IMAGE, (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE))
+        display.blit(Player.FORFEIT_IMAGE, (OFFER_DRAW_SIZE + 2 * BUFFER, display.height - BUFFER - FORFEIT_SIZE))
+        display.write(f'Turn {self.__turn}', (BUFFER,
+                                              (display.height - BUFFER - OFFER_DRAW_SIZE - TEXT_FONT_SIZE -
+                                               2 * TEXT_BUFFER)))
+        display.write('File / Rank:', (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER,
+                                       display.height - BUFFER - FORFEIT_SIZE))
+        display.write(f'{Player.FILE} / {Player.RANK}', (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER + 4 * TEXT_BUFFER,
+                                                         (display.height - BUFFER - FORFEIT_SIZE + TEXT_FONT_SIZE +
+                                                          2 * TEXT_BUFFER)))
+        if self.__winner is not None:
+            display.write('GAME OVER! SEE CONSOLE FOR INFO.', (display.width // 2 - 10 * TEXT_FONT_SIZE,
+                                                               display.height // 2 - TEXT_FONT_SIZE))
 
     def setup(self, display):
         with display.HANDLER_LOCK:
@@ -85,6 +116,10 @@ class Game:
             display.set_help_callback(handle_help_clicked_gameplay, (display, player.is_in_check))
 
         self.make_choice(player, player.take_turn())  # update the board based on player's choice
+        self.__board.lock_hovers()
+        if not isinstance(player, AI):
+            Display.MUTEX.release()  # player input event handler threads will acquire() this mutex
+
         player.set_check(False)  # must not be in check at this point
         if check_draw_by_counter(self.__non_meaningful_moves_counter):
             return self.__end(0, '50 turns have gone by without any new pieces being pulled or captured.')
