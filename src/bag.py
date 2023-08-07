@@ -119,10 +119,10 @@ class Bag:
                 y = BUFFER
         display.draw(self.__image, (x, y))
         if self.__side == 1:
-            display.write('{:02d} tiles remaining'.format(len(self.__tiles)),
+            display.write('{:02d} tiles left'.format(len(self.__tiles)),
                           (x + BAG_SIZE, y - BUFFER - TEXT_FONT_SIZE), True)
         else:
-            display.write('{:02d} tiles remaining'.format(len(self.__tiles)), (x, y + BAG_SIZE + BUFFER))
+            display.write('{:02d} tiles left'.format(len(self.__tiles)), (x, y + BAG_SIZE + BUFFER))
 
     def handle_bag_hovers(self, display, x, y, side):
         if self.__state == Bag.SELECTABLE:

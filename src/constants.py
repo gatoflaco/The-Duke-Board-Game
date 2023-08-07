@@ -28,7 +28,20 @@ TEXT_COLOR_LIGHT_MODE = Color(15, 15, 15)
 BG_COLOR_DARK_MODE = Color(56, 52, 52)
 TEXT_COLOR_DARK_MODE = Color(215, 215, 225)
 TEXT_FONT_SIZE = 18
+LARGER_FONT_SIZE = 28
 TEXT_BUFFER = 6
+
+# modal constants
+MODAL_COLOR_LIGHT_MODE = Color(210, 210, 205)
+MODAL_COLOR_DARK_MODE = Color(64, 64, 64)
+SHADER_COLOR_LIGHT_MODE = Color(255, 255, 255)
+SHADER_COLOR_DARK_MODE = Color(0, 0, 0)
+TITLE_BAR_HEIGHT = 30
+MODAL_CLOSE_PNG = image.load('assets/pngs/modal_close.png')
+MODAL_CLOSE_SIZE = 16
+MODAL_DONE_PNG = image.load('assets/pngs/modal_done.png')
+MODAL_DONE_WIDTH = 128
+MODAL_DONE_HEIGHT = 64
 
 # game constants
 OFFER_DRAW_PNG = image.load('assets/pngs/draw.png')
@@ -45,13 +58,16 @@ RANKS = ['1', '2', '3', '4', '5', '6']
 HOVERED_HIGHLIGHT = Color(255, 215, 0)  # gold
 MOV_HIGHLIGHT = Color(0, 255, 190)  # sea green
 STR_HIGHLIGHT = Color(255, 10, 10)  # red
-CMD_HIGHLIGHT = Color(255, 105, 0)  # orange
+CMD_HIGHLIGHT = Color(160, 0, 255)  # purple
 
 # player constants
 PLAYER_COLORS = [  # list of colors associated with each player
     Color(100, 150, 255),  # blue
     Color(0, 255, 25)  # green
 ]
+CHECK_PNG = image.load('assets/pngs/warning.png')
+TILE_HELP_PNG = image.load('assets/pngs/tile_help.png')
+TILE_HELP_SIZE = 16
 
 # tile constants
 with open('data/tiles/types.json') as f:

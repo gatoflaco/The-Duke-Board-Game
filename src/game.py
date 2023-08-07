@@ -5,15 +5,14 @@ Isaac Jung
 This module contains all the code related to playing a game of The Duke.
 """
 
-from pygame import SRCALPHA, Surface
 from src.display import Display, Theme
 from src.board import Board
 from src.player import Player
 from src.ai import Difficulty, AI
 from src.tile import Troop
 from src.util import *
-from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_PNG, OFFER_DRAW_SIZE, FORFEIT_PNG,
-                           FORFEIT_SIZE, TROOP_MOVEMENTS)
+from src.constants import (BUFFER, TEXT_FONT_SIZE, LARGER_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_PNG, OFFER_DRAW_SIZE,
+                           FORFEIT_PNG, FORFEIT_SIZE, TILE_HELP_PNG, TILE_HELP_SIZE, TROOP_MOVEMENTS)
 from copy import copy
 from itertools import chain
 from time import time
@@ -31,12 +30,16 @@ class Game:
         self.__board = Board()
         self.__turn = 0
         player1 = Player(1)
-        player2 = Player(2)
+        # player1 = AI(1, self, Difficulty.BEGINNER)
+        # player2 = Player(2)
+        player2 = AI(2, self, Difficulty.HARD)
         self.__players = (player1, player2)
         self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
         self.__non_meaningful_moves_counter = 0
         self.__start_time = time()
+        self.__finish_time = None
+        self.__finish_message = None
 
     @property
     def board(self):
@@ -55,7 +58,15 @@ class Game:
 
         :param display: Display object containing the main game window
         """
+        if self.__turn == 0 or self.__board.held_tile is not None or self.__board.hovered is None:
+            display.draw_all()
         self.__board.draw(display)
+        if Player.SELECTED is not None:
+            if Player.SELECTED_TILE_HOVERED:
+                Player.TILE_HELP_IMAGE.blit(TILE_HELP_PNG,
+                                            (-TILE_HELP_SIZE, -TILE_HELP_SIZE if display.theme == Theme.DARK else 0))
+            else:
+                Player.TILE_HELP_IMAGE.blit(TILE_HELP_PNG, (0, -TILE_HELP_SIZE if display.theme == Theme.DARK else 0))
         for player in self.__players:
             player.update(display)
         if isinstance(Player.PLAYER, Player):
@@ -77,27 +88,37 @@ class Game:
                                                     -FORFEIT_SIZE if display.theme == Theme.DARK else 0))
         display.blit(Player.OFFER_DRAW_IMAGE, (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE))
         display.blit(Player.FORFEIT_IMAGE, (OFFER_DRAW_SIZE + 2 * BUFFER, display.height - BUFFER - FORFEIT_SIZE))
-        display.write(f'Turn {self.__turn}', (BUFFER,
-                                              (display.height - BUFFER - OFFER_DRAW_SIZE - TEXT_FONT_SIZE -
-                                               2 * TEXT_BUFFER)))
-        display.write('File / Rank:', (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER,
-                                       display.height - BUFFER - FORFEIT_SIZE))
-        display.write(f'{Player.FILE} / {Player.RANK}', (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER + 4 * TEXT_BUFFER,
-                                                         (display.height - BUFFER - FORFEIT_SIZE + TEXT_FONT_SIZE +
-                                                          2 * TEXT_BUFFER)))
-        if self.__winner is not None:
-            display.write('GAME OVER! SEE CONSOLE FOR INFO.', (display.width // 2 - 10 * TEXT_FONT_SIZE,
-                                                               display.height // 2 - TEXT_FONT_SIZE))
+        if self.__turn == 0:
+            display.write('- SETUP PHASE -',
+                          (display.width // 2 - 4 * LARGER_FONT_SIZE, (display.height - LARGER_FONT_SIZE) // 2),
+                          False, LARGER_FONT_SIZE)
+        if self.__winner is None:
+            current_match_time = time() - self.__start_time
+            minutes = int(current_match_time // 60)
+            seconds = round(current_match_time - minutes * 60)
+        else:
+            display.write(self.__finish_message,
+                          (display.width // 2 - (27 * len(self.__finish_message) // 100) * LARGER_FONT_SIZE,
+                           (display.height - LARGER_FONT_SIZE) // 2), False, LARGER_FONT_SIZE)
+            minutes = int(self.__finish_time // 60)
+            seconds = round(self.__finish_time - minutes * 60)
+        display.write(f'Match Time: {minutes:02d}:{seconds:02d}',
+                      (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE - 2 * TEXT_FONT_SIZE - 4 * TEXT_BUFFER))
+        display.write(f'Turn {self.__turn}',
+                      (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE - TEXT_FONT_SIZE - 2 * TEXT_BUFFER))
+        display.write('File / Rank:',
+                      (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER, display.height - BUFFER - FORFEIT_SIZE))
+        display.write(f'{Player.FILE} / {Player.RANK}',
+                      (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER + 4 * TEXT_BUFFER,
+                       (display.height - BUFFER - FORFEIT_SIZE + TEXT_FONT_SIZE +
+                        2 * TEXT_BUFFER)))
 
     def setup(self, display):
         with display.HANDLER_LOCK:
             display.set_help_callback(handle_help_clicked_setup, (display,))
         for player in self.__players:  # do some initial setup
-            self.__actions_taken.append(player.setup_phase())  # initial tile placements
-            for tile in player.tiles_in_play:
-                (x, y) = tile.coords
-                with Display.MUTEX:
-                    self.__board.set_tile(x, y, tile)
+            self.__actions_taken += player.setup_phase(self.__board)  # initial tile placements
+            self.__board.lock_hovers()
         for player in self.players:
             player.update_choices(self.calculate_choices(player))
 
@@ -110,7 +131,6 @@ class Game:
             3. recalculate current game state, including what both players can currently do, and if check/checkmate
         """
         self.__turn += 1
-        print('Turn', self.__turn)
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
         with display.HANDLER_LOCK:
             display.set_help_callback(handle_help_clicked_gameplay, (display, player.is_in_check))
@@ -122,7 +142,7 @@ class Game:
 
         player.set_check(False)  # must not be in check at this point
         if check_draw_by_counter(self.__non_meaningful_moves_counter):
-            return self.__end(0, '50 turns have gone by without any new pieces being pulled or captured.')
+            return self.__end(0, 'Game over by the 50 move rule.')
         player.update_choices(self.calculate_choices(player))  # recalculate player's allowed moves
         player_attacks = get_attacks(self.calculate_choices(player, False))  # don't consider Duke safety here
         dead_position = True
@@ -542,12 +562,9 @@ class Game:
             1 for player 1, 2 for player 2, 0 for a draw (including stalemate), -1 for any other reason.
         :param reason: string representing a message to print out to inform players on why the game is over
         """
+        self.__finish_time = time() - self.__start_time
         self.__winner = status
         if status > 0:
-            print(f'Checkmate (turn {str(self.__turn)})! {reason}')
+            self.__finish_message = f'Checkmate! {reason}'
         elif status == 0:
-            print(f'Draw (turn {str(self.__turn)})! {reason}')
-        time_taken = time() - self.__start_time
-        minutes = int(time_taken // 60)
-        seconds = round(time_taken - minutes * 60)
-        print(f'The game took {minutes} minutes and {seconds} seconds to complete.')
+            self.__finish_message = f'Draw! {reason}'

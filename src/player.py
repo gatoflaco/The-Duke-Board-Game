@@ -5,11 +5,12 @@ Isaac Jung
 This module contains all code related to players in a given game of the Duke.
 """
 
-from pygame import SRCALPHA, Surface
+from pygame import SRCALPHA, Surface, transform
+from src.display import Display
 from src.bag import Bag
 from src.tile import Troop
-from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE, TILE_TYPES, TILE_SIZE,
-                           STARTING_TROOPS, BAG_SIZE)
+from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE, BOARD_SIZE, CHECK_PNG,
+                           TILE_HELP_SIZE, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE)
 from copy import copy
 from time import sleep
 
@@ -59,6 +60,9 @@ class Player:
     OFFER_DRAW_HOVERED = False
     FORFEIT_IMAGE = Surface((FORFEIT_SIZE, FORFEIT_SIZE), SRCALPHA)
     FORFEIT_HOVERED = False
+    TILE_HELP_IMAGE = Surface((TILE_HELP_SIZE, TILE_HELP_SIZE), SRCALPHA)
+    SELECTED_TILE_HOVERED = False
+    SETUP = False
 
     def __init__(self, side, name='Duke'):
         self._side = side
@@ -76,10 +80,7 @@ class Player:
         self._duke = None
         self._in_check = False
         self._choices = {
-            'pull': {
-                'is_allowed': False,
-                'locations': []
-            },
+            'pull': [],
             'act': {}
         }
 
@@ -103,21 +104,6 @@ class Player:
         result._in_check = self._in_check
         result._choices = self._choices.copy()
         return result
-
-    def setup_phase(self):
-        """Runs the setup phase for this player.
-
-        The setup phase consists of placing the Duke in the rank closest to the player's side, in either file c or d,
-            and then placing exactly two Footman tiles on any 2 of the 3 cardinally adjacent spaces next to the Duke.
-        """
-        # TODO: get player input for coordinates instead of using hard coded ones
-        coords = [(2, 0), (2, 1), (3, 0)] if self._side == 1 else [(3, 5), (2, 5), (4, 5)]
-        i = 0
-        for troop_name in STARTING_TROOPS:
-            self._in_play.append(Troop(troop_name, self._side, coords[i], True))
-            if troop_name == 'Duke':
-                self._duke = self._in_play[-1]  # the most recently added is the Duke
-            i += 1
 
     @property
     def side(self):
@@ -186,21 +172,31 @@ class Player:
             for tile in self._captured:
                 tile.draw(display,
                           display.width - TILE_SIZE - BUFFER - dx,
-                          (display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE - 2 * TEXT_BUFFER - TILE_SIZE
+                          (display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE - 4 * TEXT_BUFFER - TILE_SIZE
                            - dy), True)
                 dy += TILE_SIZE // 4
                 if dy > TILE_SIZE * 2:
                     dx = TILE_SIZE + BUFFER
                     dy = 0
-            display.draw(Surface((TILE_SIZE, TILE_SIZE), SRCALPHA), (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
-                                                                     display.height - TILE_SIZE - BUFFER))
+            display.write('Captured Tiles', (display.width - TILE_SIZE - BUFFER - dx,
+                                             (display.height - BAG_SIZE - 3 * BUFFER - 5 * TEXT_FONT_SIZE - 4
+                                              * TEXT_BUFFER - 3 * TILE_SIZE // 4 - dy)))
+            display.draw(Surface((TILE_SIZE, 2 * TILE_SIZE), SRCALPHA),
+                         (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE, display.height - 2 * TILE_SIZE - BUFFER))
             if Player.PLAYER == self:
-                if Player.COMMANDED is not None:
-                    Player.COMMANDED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
-                                          display.height - TILE_SIZE - BUFFER)
-                elif Player.SELECTED is not None:
-                    Player.SELECTED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
-                                         display.height - TILE_SIZE - BUFFER)
+                if Player.SELECTED is not None:
+                    if Player.COMMANDED is not None:
+                        Player.COMMANDED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                              display.height - TILE_SIZE - BUFFER)
+                        Player.COMMANDED.draw_back(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                                   display.height - 2 * TILE_SIZE - BUFFER)
+                    else:
+                        Player.SELECTED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                             display.height - TILE_SIZE - BUFFER)
+                        Player.SELECTED.draw_back(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                                  display.height - 2 * TILE_SIZE - BUFFER)
+                    display.blit(Player.TILE_HELP_IMAGE, (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
+                                                          display.height - 2 * TILE_SIZE - BUFFER))
         else:
             display.write('Player 2',
                           (BUFFER,
@@ -211,20 +207,78 @@ class Player:
             dx = 0
             dy = 0
             for tile in self._captured:
-                tile.draw(display,
-                          BUFFER + dx,
-                          BUFFER + BAG_SIZE + 2 * BUFFER + 4 * TEXT_FONT_SIZE + 2 * TEXT_BUFFER + dy, True)
+                tile.draw(display, BUFFER + dx,
+                          BUFFER + BAG_SIZE + 2 * BUFFER + 4 * TEXT_FONT_SIZE + 4 * TEXT_BUFFER + dy, True)
                 dy += TILE_SIZE // 4
                 if dy > TILE_SIZE * 2:
                     dx = TILE_SIZE + BUFFER
                     dy = 0
-            display.draw(Surface((TILE_SIZE, TILE_SIZE), SRCALPHA), (BAG_SIZE + 2 * BUFFER, BUFFER))
+            display.write('Captured Tiles', (BUFFER + dx,
+                                             (BUFFER + BAG_SIZE + 2 * BUFFER + 4 * TEXT_FONT_SIZE + 4 * TEXT_BUFFER
+                                              + 3 * TILE_SIZE // 4 + dy)))
+            display.draw(Surface((TILE_SIZE, 2 * TILE_SIZE), SRCALPHA), (BAG_SIZE + 2 * BUFFER, BUFFER))
             if Player.PLAYER == self:
-                if Player.COMMANDED is not None:
-                    Player.COMMANDED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
-                elif Player.SELECTED is not None:
-                    Player.SELECTED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
+                if Player.SELECTED is not None:
+                    if Player.COMMANDED is not None:
+                        Player.COMMANDED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
+                        Player.COMMANDED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER)
+                    else:
+                        Player.SELECTED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
+                        Player.SELECTED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER)
+                    display.blit(Player.TILE_HELP_IMAGE, (BAG_SIZE + 2 * BUFFER, BUFFER))
+        if self._in_check and Player.SELECTED != self._duke:
+            display.blit(CHECK_PNG, (((display.width - BOARD_SIZE) // 2 + 5 + (TILE_SIZE + 6)
+                                      * (self._duke.coords[0] + 1) - CHECK_PNG.get_size()[0]),
+                                     BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self.duke.coords[1])))
         self._bag.draw(display)
+
+    def setup_phase(self, board):
+        """Runs the setup phase for this player.
+
+        The setup phase consists of placing the Duke in the rank closest to the player's side, in either file c or d,
+            and then placing exactly two Footman tiles on any 2 of the 3 cardinally adjacent spaces next to the Duke.
+        """
+        Player.SETUP = True
+        self._bag.set_state(Bag.SELECTED)
+        choice_list = []
+        y = 0 if self._side == 1 else 5
+        self._choices['pull'] = [(2, y), (3, y)]
+        for troop_name in STARTING_TROOPS:  # first, find and play the Duke
+            if troop_name == 'Duke':
+                self._in_play.append(Troop(troop_name, self._side, (-1, -1), True))
+                self._duke = self._in_play[-1]
+                board.set_held(self._in_play[-1])
+                Player.PLAYER = self
+                while Player.CHOICE is None:
+                    sleep(0.1)
+                i, j = Player.CHOICE['src_location']
+                board.set_tile(i, j, self._in_play[-1])
+                Display.MUTEX.release()
+                self._in_play[-1].move(i, j)
+                choice_list.append(Player.CHOICE)
+                break
+        dy = 1 if self._side == 1 else -1
+        self._choices['pull'] = [
+            (self._duke.coords[0] - 1, y), (self._duke.coords[0], y + dy), (self._duke.coords[0] + 1, y)]
+        for troop_name in STARTING_TROOPS:  # next, play other starting troops
+            if troop_name == 'Duke':
+                continue
+            self._in_play.append(Troop(troop_name, self._side, (-1, -1), True))
+            board.set_held(self._in_play[-1])
+            Player.CHOICE = None
+            Player.PLAYER = self
+            while Player.CHOICE is None:
+                sleep(0.1)
+            i, j = Player.CHOICE['src_location']
+            self._choices['pull'].remove((i, j))
+            board.set_tile(i, j, self._in_play[-1])
+            Display.MUTEX.release()
+            self._in_play[-1].move(i, j)
+            choice_list.append(Player.CHOICE)
+        Player.CHOICE = None
+        self._bag.set_state(Bag.SELECTABLE)
+        Player.SETUP = False
+        return choice_list
 
     def take_turn(self):
         """Handles the logic of getting user input on what to do for the player's turn.
@@ -236,13 +290,11 @@ class Player:
 
         :return: special dict called "choice", whose format is documented in docs/choice_formats.txt
         """
-        # TODO: get user input on what they want to do instead of hard coding
-        Player.PLAYER = self
-        while(Player.CHOICE is None):
+        Player.PLAYER = self  # triggers event thread to allow user input, then set to None when input finished
+        while Player.CHOICE is None:  # will be set by event thread
             sleep(0.1)  # wait for UI input
-        Player.PLAYER = None
-        Player.SELECTED = None
         Player.COMMANDED = None
+        Player.SELECTED = None
         choice = Player.CHOICE
         if choice['action_type'] == 'pull':  # need to actually draw the new tile here
             x, y = choice['src_location']
@@ -300,13 +352,36 @@ class Player:
                 return troop_tile
         return None  # not found
 
+    def handle_tile_help_hovers(self, display, x, y):
+        if Player.SELECTED is not None:
+            rect = Player.SELECTED.image.get_rect()
+            if self._side == 1:
+                if (rect.collidepoint((x - (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE),
+                                       y - (display.height - TILE_SIZE - BUFFER))) or
+                        rect.collidepoint((x - (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE),
+                                           y - (display.height - 2 * TILE_SIZE - BUFFER)))):
+                    Player.SELECTED_TILE_HOVERED = True
+                else:
+                    Player.SELECTED_TILE_HOVERED = False
+            else:
+                if (rect.collidepoint((x - (BAG_SIZE + 2 * BUFFER)), y - BUFFER) or
+                        rect.collidepoint((x - (BAG_SIZE + 2 * BUFFER)), y - (TILE_SIZE + BUFFER))):
+                    Player.SELECTED_TILE_HOVERED = True
+                else:
+                    Player.SELECTED_TILE_HOVERED = False
+        else:
+            Player.SELECTED_TILE_HOVERED = False
+
     def handle_clickable_hovers(self, display, x, y):
         self._bag.handle_bag_hovers(display, x, y, self._side)
+        self.handle_tile_help_hovers(display, x, y)
         handle_offer_draw_hovers(display, x, y)
         handle_forfeit_hovers(display, x, y)
         # note that tile hovers are handled by the board, because you may want to hover over opponent tiles
 
     def handle_clickable_clicked(self):
+        if Player.SETUP:
+            return
         if self._bag.state == Bag.SELECTED:
             self._bag.set_state(Bag.SELECTABLE)
         elif self._bag.hovered:

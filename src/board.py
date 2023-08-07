@@ -9,8 +9,8 @@ from pygame import mouse, Surface
 from src.display import Display, Theme
 from src.player import Player
 from src.tile import Tile
-from src.constants import (BUFFER, TEXT_BUFFER, BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, FILES, RANKS, HOVERED_HIGHLIGHT,
-                           MOV_HIGHLIGHT, STR_HIGHLIGHT, CMD_HIGHLIGHT, TILE_SIZE, BAG_SIZE)
+from src.constants import (TEXT_BUFFER, BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, FILES, RANKS, HOVERED_HIGHLIGHT,
+                           MOV_HIGHLIGHT, STR_HIGHLIGHT, CMD_HIGHLIGHT, TILE_SIZE)
 
 
 def highlight(display, location, color):
@@ -69,6 +69,17 @@ class Board:
     def get_tile(self, x, y):
         return self.__grid[x][y]
 
+    @property
+    def hovered(self):
+        return self.__hovered
+
+    def set_held(self, tile):
+        self.__held = tile
+
+    @property
+    def held_tile(self):
+        return self.__held
+
     def draw(self, display):
         """Draws the board and every tile on it to the screen
 
@@ -90,16 +101,17 @@ class Board:
                 for location in Player.PLAYER.choices['pull']:
                     highlight(display, location, HOVERED_HIGHLIGHT)
             else:
-                if isinstance(Player.COMMANDED, Tile):
-                    for location in Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands'][tile.coords]:
+                selected = Player.SELECTED
+                commanded = Player.COMMANDED
+                if isinstance(commanded, Tile):
+                    for location in Player.PLAYER.choices['act'][selected.coords]['commands'][commanded.coords]:
                         highlight(display, location, MOV_HIGHLIGHT)
-                elif isinstance(Player.SELECTED, Tile) and Player.SELECTED.coords in Player.PLAYER.choices['act']:
-                    # TODO: draw ? and x buttons on tile
-                    for location in Player.PLAYER.choices['act'][Player.SELECTED.coords]['moves']:
+                elif isinstance(selected, Tile) and selected.coords in Player.PLAYER.choices['act']:
+                    for location in Player.PLAYER.choices['act'][selected.coords]['moves']:
                         highlight(display, location, MOV_HIGHLIGHT)
-                    for location in Player.PLAYER.choices['act'][Player.SELECTED.coords]['strikes']:
+                    for location in Player.PLAYER.choices['act'][selected.coords]['strikes']:
                         highlight(display, location, STR_HIGHLIGHT)
-                    for location in Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands']:
+                    for location in Player.PLAYER.choices['act'][selected.coords]['commands']:
                         highlight(display, location, CMD_HIGHLIGHT)
         if isinstance(self.__held, Tile):
             x, y = mouse.get_pos()
@@ -119,10 +131,12 @@ class Board:
         self.__hovered = (tile_x, tile_y)
 
     def handle_tile_held(self):
-        if Player.SELECTED is None and self.__hovered in Player.PLAYER.choices['act']:
+        if Player.SETUP:
+            return
+        if self.__hovered in Player.PLAYER.choices['act']:
             self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
             Player.SELECTED = self.__held
-        elif (Player.SELECTED is not None and Player.COMMANDED is None and self.__hovered in
+        elif (Player.SELECTED in Player.PLAYER.choices['act'] and self.__hovered in
               Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands']):
             self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
             Player.COMMANDED = self.__held
@@ -136,22 +150,26 @@ class Board:
         else:
             if Player.PLAYER.bag_clicked:
                 if self.__hovered in Player.PLAYER.choices['pull']:
+                    Player.PLAYER = None
                     Player.CHOICE = {
                         'action_type': 'pull',
                         'src_location': self.__hovered,
                         'tile': None
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
+                elif Player.SETUP:
+                    return  # don't release the held tile
                 else:  # player clicked somewhere they aren't allowed to play a tile
                     pass  # in player.py, handle_clickable_clicked() should handle going back a state
             elif Player.COMMANDED is not None:  # when True, Player.SELECTED must also not be None
                 if (self.__hovered in
                         Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands'][Player.COMMANDED.coords]):
+                    Player.PLAYER = None
                     Player.CHOICE = {
                         'action_type': 'cmd',
-                        'src_location': Player.SELECTED.coords,
+                        'src_location': Player.COMMANDED.coords,
                         'dst_location': self.__hovered,
-                        'cmd_location': Player.COMMANDED.coords,
+                        'cmd_location': Player.SELECTED.coords,
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
                 else:  # player clicked somewhere they aren't allowed to command the commanded troop to move
@@ -163,6 +181,7 @@ class Board:
                       self.__held is None):
                     Player.COMMANDED = self.__grid[self.__hovered[0]][self.__hovered[1]]
                 elif self.__hovered in Player.PLAYER.choices['act'][Player.SELECTED.coords]['strikes']:
+                    Player.PLAYER = None
                     Player.CHOICE = {
                         'action_type': 'str',
                         'src_location': Player.SELECTED.coords,
@@ -170,6 +189,7 @@ class Board:
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
                 elif self.__hovered in Player.PLAYER.choices['act'][Player.SELECTED.coords]['moves']:
+                    Player.PLAYER = None
                     Player.CHOICE = {
                         'action_type': 'mov',
                         'src_location': Player.SELECTED.coords,

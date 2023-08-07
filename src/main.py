@@ -65,7 +65,8 @@ while not Global.CRASHED:
                 display.handle_component_clicks()
             elif isinstance(Player.PLAYER, Player):
                 game.board.handle_tile_clicked()
-                Player.PLAYER.handle_clickable_clicked()
+                if isinstance(Player.PLAYER, Player):  # can be changed by previous loc
+                    Player.PLAYER.handle_clickable_clicked()
         if event.type == pygame.VIDEORESIZE:
             width, height = event.size
             display.handle_resize(width, height)

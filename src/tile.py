@@ -110,11 +110,16 @@ class Troop(Tile):
     def __init__(self, name, player_side, coords=(0, 0), in_play=False):
         super(Troop, self).__init__(name, coords)
         self._player_side = player_side
+        self.__back_image = Surface((TILE_SIZE, TILE_SIZE), SRCALPHA)
+        if name != '':
+            self.__back_image.blit(self._png, (-TILE_SIZE, 0))
         if self._player_side == 2:
             self._image = transform.rotate(self._image, 180)
+            self.__back_image = transform.rotate(self.__back_image, 180)
         self.__in_play = in_play
         self.__is_captured = False
         self.__side = 1
+
 
     def __copy__(self):
         cls = self.__class__
@@ -124,6 +129,7 @@ class Troop(Tile):
         result._image = copy(self._image)
         result._coords = self._coords
         result._player_side = self._player_side
+        result.__back_image = copy(self.__back_image)
         result.__in_play = self.__in_play
         result.__is_captured = self.__is_captured
         result.__side = self.__side
@@ -154,6 +160,7 @@ class Troop(Tile):
         return True
 
     def flip(self):
+        self.__back_image.blit(self._image, (0, 0))
         if self.__side == 1:  # on side 1, about to flip to side 2
             self.__side = 2
             self._image.blit(self._png, (-TILE_SIZE, 0))  # take the base spritesheet and shift it into place
@@ -162,3 +169,14 @@ class Troop(Tile):
             self._image.blit(self._png, (0, 0))
         if self._player_side == 2:
             self._image = transform.rotate(self._image, 180)
+
+    def draw_back(self, display, x, y, rotated=False):
+        """Draws the backside of the troop tile to the screen
+
+        :param display: Display object containing the main game window
+        :param x: x-coordinate of pixel location on game window of upper left corner of tile
+        :param y: y-coordinate of pixel location on game window of upper left corner of tile
+        :param rotated: boolean that causes the tile to be drawn 180 degrees rotated when True
+        """
+        # self.__back_image.unlock()
+        display.blit(transform.rotate(self.__back_image, 180) if rotated else self.__back_image, (x, y))

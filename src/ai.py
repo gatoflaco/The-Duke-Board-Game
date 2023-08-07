@@ -121,38 +121,56 @@ class AI(Player):
         result.__seed = self.__seed
         return result
 
-    def setup_phase(self):
+    def setup_phase(self, board):
         """Runs the setup phase for an AI.
 
         The setup phase consists of placing the Duke in the rank closest to the player's side, in either file c or d,
             and then placing exactly two Footman tiles on any 2 of the 3 cardinally adjacent spaces next to the Duke.
         Although the AI decides where to place its tiles, it doesn't score anything here. It just randomly picks.
+
+        :param board: Board object on which setup phase should occur
+        :return: list of special dicts called "choice", whose format is documented in docs/choice_formats.txt
         """
         tic = time()  # for keeping the AI from making a decision too quickly (it can be jarring lol)
-        start = {}  # will hold info about the starting locations chosen
+        choice_list = []
         y = 0 if self._side == 1 else 5
-        valid_duke_coords = {(2, y), (3, y)}
-        duke_coords = valid_duke_coords.pop()  # randomly pick one of the valid starting places for the Duke
+        valid_duke_coords = [(2, y), (3, y)]
+        duke_coords = valid_duke_coords.pop(randrange(len(valid_duke_coords)))  # randomly pick Duke starting place
         for troop_name in STARTING_TROOPS:  # first, find and play the Duke
             if troop_name == 'Duke':
                 self._in_play.append(Troop(troop_name, self._side, duke_coords, True))
-                start['Duke'] = self._in_play[-1]
-                self._duke = start['Duke']
+                self._duke = self._in_play[-1]
+                choice_list.append({
+                    'action_type': 'pull',
+                    'src_location': duke_coords,
+                    'tile': self._in_play[-1]
+                })
+                toc = time()
+                dif = toc - tic
+                if dif < MIN_TURN_TIME / 3:
+                    sleep(MIN_TURN_TIME / 3 - dif)
+                tic = toc
+                board.set_tile(duke_coords[0], duke_coords[1], self._in_play[-1])
                 break
         dy = 1 if self._side == 1 else -1
-        other_coords = {(duke_coords[0] - 1, y), (duke_coords[0], y + dy), (duke_coords[0] + 1, y)}
-        other_count = 0
+        other_coords = [(duke_coords[0] - 1, y), (duke_coords[0], y + dy), (duke_coords[0] + 1, y)]
         for troop_name in STARTING_TROOPS:  # next, play other starting troops
             if troop_name == 'Duke':
                 continue
-            other_count += 1
-            self._in_play.append(Troop(troop_name, self._side, other_coords.pop(), True))
-            start['Other ' + str(other_count)] = self._in_play[-1]
-        toc = time()
-        dif = toc - tic
-        if dif < MIN_TURN_TIME:
-            sleep(MIN_TURN_TIME - dif)
-        return start
+            coords = other_coords.pop(randrange(len(other_coords)))
+            self._in_play.append(Troop(troop_name, self._side, coords, True))
+            choice_list.append({
+                'action_type': 'pull',
+                'src_location': coords,
+                'tile': self._in_play[-1]
+            })
+            toc = time()
+            dif = toc - tic
+            if dif < MIN_TURN_TIME / 3:
+                sleep(MIN_TURN_TIME / 3 - dif)
+            tic = toc
+            board.set_tile(coords[0], coords[1], self._in_play[-1])
+        return choice_list
 
     @property
     def seed(self):
@@ -219,13 +237,13 @@ class AI(Player):
         :return: special dict called "choice", whose format is documented in docs/choice_formats.txt
             It may be updated if the choice was to pull.
         """
-        if choice['action_type'] == 'pull':  # need to actually draw the new tile here
-            x, y = choice['src_location']
-            choice['tile'] = self.play_new_troop_tile(x, y)
         toc = time()
         dif = toc - tic
         if dif < MIN_TURN_TIME:
             sleep(MIN_TURN_TIME - dif)
+        if choice['action_type'] == 'pull':  # need to actually draw the new tile here
+            x, y = choice['src_location']
+            choice['tile'] = self.play_new_troop_tile(x, y)
         return choice
 
     def __initialize_choice_list(self):

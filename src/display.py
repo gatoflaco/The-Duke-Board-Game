@@ -2,7 +2,7 @@
 game.py
 Isaac Jung
 
-This module contains all the code related to the UI.
+This module contains all the code related to the main UI.
 """
 
 from pygame import display, font, RESIZABLE, SRCALPHA, Surface
@@ -32,9 +32,6 @@ class Display:
         Width of the window in pixels.
     height : int
         Height of the window in pixels.
-    text_font : pygame.font.Font (optional; None by default)
-        Font to be used for all text in the game.
-        When not provided, defaults to the pygame default font.
     theme : Theme attribute (optional; Theme.LIGHT by default)
         Affects background and text colors used.
         When not provided, defaults to a light mode theme.
@@ -42,11 +39,8 @@ class Display:
     MUTEX = Lock()  # used to lock screen-update calculations from happening during a screen update and vice versa
     HANDLER_LOCK = Lock()  # used specifically to protect against showing the wrong menu during transitions
 
-    def __init__(self, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, text_font=None, theme=Theme.LIGHT):
+    def __init__(self, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, theme=Theme.LIGHT):
         self.__game_display = display.set_mode((width, height), RESIZABLE)
-        self.__font = font.Font(font.get_default_font(), TEXT_FONT_SIZE)
-        if text_font is not None and isinstance(text_font, font.Font):
-            self.__font = text_font
         self.__theme = theme
         self.__components = {
             'theme_toggler': {
@@ -81,6 +75,10 @@ class Display:
             }
         }
         self.draw_all()
+
+    @property
+    def surface(self):
+        return self.__game_display
 
     def toggle_theme(self):
         self.HANDLER_LOCK.release()
@@ -161,7 +159,7 @@ class Display:
     def blit(self, surface, location):
         self.__game_display.blit(surface, location)
 
-    def write(self, text, location, right_align=False):
+    def write(self, text, location, right_align=False, font_size=TEXT_FONT_SIZE):
         """Uses the blit function to write a string to the screen.
 
         It first draws a blank surface over the existing area, so that layers of text don't get jumbled together.
@@ -172,7 +170,8 @@ class Display:
         :param right_align: boolean that determines whether the location parameter represents upper-left or upper-right
             False by default, setting it to True will have it treat location as the upper-right.
         """
-        text_surface = font.Font.render(self.__font, text, True,
+        font_to_use = font.Font(font.get_default_font(), font_size)
+        text_surface = font.Font.render(font_to_use, text, True,
                                         TEXT_COLOR_DARK_MODE if self.__theme == Theme.DARK else TEXT_COLOR_LIGHT_MODE)
         bg = Surface((text_surface.get_width() + 2, text_surface.get_height()))
         bg.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
