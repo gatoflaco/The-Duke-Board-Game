@@ -80,6 +80,7 @@ TILE_SIZE = 128  # width and height of a single tile, must be small enough to fi
 STARTING_TROOPS = ['Duke', 'Footman', 'Footman']
 with open('data/tiles/movements.json') as f:
     TROOP_MOVEMENTS = load(f)  # data structure listing all troop movements
+TILE_SHADER = Color(180, 180, 180)
 
 # ai constants
 with open('data/ai/troop_weights.json') as f:

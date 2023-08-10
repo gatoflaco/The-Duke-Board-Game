@@ -5,12 +5,12 @@ Isaac Jung
 This module contains all code related to players in a given game of the Duke.
 """
 
-from pygame import SRCALPHA, Surface, transform
+from pygame import SRCALPHA, Surface
 from src.display import Display
 from src.bag import Bag
 from src.tile import Troop
-from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE, BOARD_SIZE, CHECK_PNG,
-                           TILE_HELP_SIZE, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE)
+from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE, BOARD_SIZE,
+                           PLAYER_COLORS, CHECK_PNG, TILE_HELP_SIZE, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE)
 from copy import copy
 from time import sleep
 
@@ -162,28 +162,32 @@ class Player:
     def update(self, display):
         if self._side == 1:
             display.write('Player 1',
-                          (display.width - BUFFER,
-                           display.height - BAG_SIZE - 2 * BUFFER - 4 * TEXT_FONT_SIZE), True)
+                          (display.width - BUFFER - TEXT_FONT_SIZE - TEXT_BUFFER,
+                           display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE), True)
             display.write(self._name,
-                          (display.width - BUFFER,
-                           display.height - BAG_SIZE - 2 * BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
+                          (display.width - BUFFER - TEXT_FONT_SIZE - TEXT_BUFFER,
+                           display.height - BAG_SIZE - 3 * BUFFER - 3 * TEXT_FONT_SIZE + TEXT_BUFFER), True)
             dx = 0
             dy = 0
             for tile in self._captured:
                 tile.draw(display,
                           display.width - TILE_SIZE - BUFFER - dx,
-                          (display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE - 4 * TEXT_BUFFER - TILE_SIZE
+                          (display.height - BAG_SIZE - 4 * BUFFER - 4 * TEXT_FONT_SIZE - 4 * TEXT_BUFFER - TILE_SIZE
                            - dy), True)
                 dy += TILE_SIZE // 4
                 if dy > TILE_SIZE * 2:
                     dx = TILE_SIZE + BUFFER
                     dy = 0
             display.write('Captured Tiles', (display.width - TILE_SIZE - BUFFER - dx,
-                                             (display.height - BAG_SIZE - 3 * BUFFER - 5 * TEXT_FONT_SIZE - 4
+                                             (display.height - BAG_SIZE - 4 * BUFFER - 5 * TEXT_FONT_SIZE - 4
                                               * TEXT_BUFFER - 3 * TILE_SIZE // 4 - dy)))
             display.draw(Surface((TILE_SIZE, 2 * TILE_SIZE), SRCALPHA),
-                         (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE, display.height - 2 * TILE_SIZE - BUFFER))
+                         (display.width - BAG_SIZE - 3 * BUFFER - TILE_SIZE, display.height - 2 * TILE_SIZE - BUFFER))
             if Player.PLAYER == self:
+                marker = Surface((TEXT_FONT_SIZE, TEXT_FONT_SIZE), SRCALPHA)
+                marker.fill(PLAYER_COLORS[0])
+                display.blit(marker, (display.width - BUFFER - TEXT_FONT_SIZE,
+                                      display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE))
                 if Player.SELECTED is not None:
                     if Player.COMMANDED is not None:
                         Player.COMMANDED.draw(display, display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
@@ -197,13 +201,15 @@ class Player:
                                                   display.height - 2 * TILE_SIZE - BUFFER)
                     display.blit(Player.TILE_HELP_IMAGE, (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
                                                           display.height - 2 * TILE_SIZE - BUFFER))
+            else:
+                display.blit(Surface((TEXT_FONT_SIZE, TEXT_FONT_SIZE), SRCALPHA),
+                             (display.width - BUFFER - TEXT_FONT_SIZE,
+                              display.height - BAG_SIZE - 3 * BUFFER - 4 * TEXT_FONT_SIZE))
         else:
-            display.write('Player 2',
-                          (BUFFER,
-                           BUFFER + BAG_SIZE + BUFFER + 2 * TEXT_FONT_SIZE))
-            display.write(self._name,
-                          (BUFFER,
-                           BUFFER + BAG_SIZE + BUFFER + 3 * TEXT_FONT_SIZE + TEXT_BUFFER))
+            display.write('Player 2', (BUFFER + TEXT_FONT_SIZE + TEXT_BUFFER,
+                                       BUFFER + BAG_SIZE + BUFFER + 2 * TEXT_FONT_SIZE))
+            display.write(self._name, (BUFFER + TEXT_FONT_SIZE + TEXT_BUFFER,
+                                       BUFFER + BAG_SIZE + BUFFER + 3 * TEXT_FONT_SIZE + TEXT_BUFFER))
             dx = 0
             dy = 0
             for tile in self._captured:
@@ -218,18 +224,20 @@ class Player:
                                               + 3 * TILE_SIZE // 4 + dy)))
             display.draw(Surface((TILE_SIZE, 2 * TILE_SIZE), SRCALPHA), (BAG_SIZE + 2 * BUFFER, BUFFER))
             if Player.PLAYER == self:
+                marker = Surface((TEXT_FONT_SIZE, TEXT_FONT_SIZE), SRCALPHA)
+                marker.fill(PLAYER_COLORS[1])
+                display.blit(marker, (BUFFER, BUFFER + BAG_SIZE + BUFFER + 2 * TEXT_FONT_SIZE))
                 if Player.SELECTED is not None:
                     if Player.COMMANDED is not None:
-                        Player.COMMANDED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
-                        Player.COMMANDED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER)
+                        Player.COMMANDED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER, True)
+                        Player.COMMANDED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER, True)
                     else:
-                        Player.SELECTED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER)
-                        Player.SELECTED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER)
+                        Player.SELECTED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER, True)
+                        Player.SELECTED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER, True)
                     display.blit(Player.TILE_HELP_IMAGE, (BAG_SIZE + 2 * BUFFER, BUFFER))
-        if self._in_check and Player.SELECTED != self._duke:
-            display.blit(CHECK_PNG, (((display.width - BOARD_SIZE) // 2 + 5 + (TILE_SIZE + 6)
-                                      * (self._duke.coords[0] + 1) - CHECK_PNG.get_size()[0]),
-                                     BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * self.duke.coords[1])))
+            else:
+                display.blit(Surface((TEXT_FONT_SIZE, TEXT_FONT_SIZE), SRCALPHA),
+                             (BUFFER, BUFFER + BAG_SIZE + BUFFER + 2 * TEXT_FONT_SIZE))
         self._bag.draw(display)
 
     def setup_phase(self, board):

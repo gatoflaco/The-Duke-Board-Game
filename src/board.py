@@ -5,12 +5,14 @@ Isaac Jung
 This module contains all code related to the board.
 """
 
-from pygame import mouse, Surface
+from pygame import mouse, SRCALPHA, Surface, transform
 from src.display import Display, Theme
 from src.player import Player
 from src.tile import Tile
+from src.util import convert_board_x_coordinate_to_file, convert_board_y_coordinate_to_rank
 from src.constants import (TEXT_BUFFER, BOARD_PNG, BOARD_DARK_PNG, BOARD_SIZE, FILES, RANKS, HOVERED_HIGHLIGHT,
-                           MOV_HIGHLIGHT, STR_HIGHLIGHT, CMD_HIGHLIGHT, TILE_SIZE)
+                           MOV_HIGHLIGHT, STR_HIGHLIGHT, CMD_HIGHLIGHT, CHECK_PNG, TILE_SIZE)
+from time import sleep
 
 
 def highlight(display, location, color):
@@ -37,21 +39,25 @@ class Board:
     The board is a 6x6 grid that can be represented as a 2D array.
     When a tile is placed on the board, it occupies one (x, y)-coordinate on this grid, or one index in the 2D array.
     """
+    ANIMATING = False  # used to prevent redrawing the board during an animation
 
     def __init__(self):
         self.__grid = [[None] * 6 for _ in range(6)]
         self.__hovered = None  # coordinates of tile being hovered
         self.__held = None
+        self.__mirrored = False
 
     def copy(self, players):
         """Unusual implementation of self cloning that requires players to be cloned separately.
 
         Because players and the board they are playing on share references to their tiles, one or the other must be
-        solely responsible for copying the tile objects referenced by both.
+        solely responsible for copying the tile objects referenced by both. This function assumes that the Player
+        objects will make copies of the Tile objects on the board, therefore the caller should first make copies of the
+        Player objects, and pass those copies to this function.
 
         :param players: tuple of Player objects of players whose tiles should be played on the new board
             As noted in the description, the expectation is that these Player objects are themselves copies of others.
-        :return:
+        :return: Board object of the copied board
         """
         cls = self.__class__
         result = cls.__new__(cls)
@@ -60,7 +66,9 @@ class Board:
             for tile in player.tiles_in_play:
                 x, y = tile.coords
                 result.set_tile(x, y, tile)
-        result.__hovered = None
+        result.__hovered = self.__hovered
+        result.__held = self.__held
+        result.__mirrored = self.__mirrored
         return result
 
     def set_tile(self, x, y, tile):
@@ -80,8 +88,47 @@ class Board:
     def held_tile(self):
         return self.__held
 
+    @property
+    def is_mirrored(self):
+        return self.__mirrored
+
+    def animate_rotation(self, display):
+        """Shows an animation of the board rotating.
+
+        Code adapted from https://www.pygame.org/wiki/RotateCenter.
+
+        :param display: Display object containing the main game window
+        """
+        with Display.MUTEX:  # waits for current frame to finish drawing
+            Board.ANIMATING = True  # tells other modules not to draw the board (other things may still be rendered)
+        current_board_image = Surface((BOARD_SIZE, BOARD_SIZE), SRCALPHA)
+        current_board_image.blit(display.surface, ((BOARD_SIZE - display.width) // 2, 0))
+        for angle in range(1, 181, 2):
+            orig_rect = current_board_image.get_rect()
+            rot_image = transform.rotate(current_board_image, angle)
+            rot_rect = orig_rect.copy()
+            rot_rect.center = rot_image.get_rect().center
+            rot_image = rot_image.subsurface(rot_rect).copy()
+            display.blit(rot_image, ((display.width - BOARD_SIZE) // 2, 0))
+            sleep(1 / 720)
+        self.__mirrored = not self.is_mirrored  # flip internal state
+        Board.ANIMATING = False  # allow other modules to start drawing the board again
+
+    def draw_check(self, display, duke_coords):
+        duke_x, duke_y = duke_coords  # Duke's coordinates on the grid
+        x, y = (duke_x + 1, duke_y) if not self.__mirrored else (6 - duke_x, 5 - duke_y)  # coords could be mirrored
+        display.blit(CHECK_PNG, ((display.width - BOARD_SIZE) // 2 + 5 + (TILE_SIZE + 6) * x - CHECK_PNG.get_size()[0],
+                                 BOARD_SIZE - (TILE_SIZE + 5 + (TILE_SIZE + 6) * y)))
+
+    def draw_held(self, display):
+        x, y = mouse.get_pos()
+        self.__held.draw(display, x - TILE_SIZE // 2, y - TILE_SIZE // 2, self.__mirrored)
+
     def draw(self, display):
-        """Draws the board and every tile on it to the screen
+        """Draws the board and every tile on it to the screen.
+
+        After drawing the base board and tiles on it, this function also draws highlights over a live player's selected
+        options. Other functions are responsible for updating the state variables associated with this feature.
 
         :param display: Display object containing the main game window
         """
@@ -113,11 +160,12 @@ class Board:
                         highlight(display, location, STR_HIGHLIGHT)
                     for location in Player.PLAYER.choices['act'][selected.coords]['commands']:
                         highlight(display, location, CMD_HIGHLIGHT)
-        if isinstance(self.__held, Tile):
-            x, y = mouse.get_pos()
-            self.__held.draw(display, x - TILE_SIZE // 2, y - TILE_SIZE // 2)
-        elif self.__hovered is not None:
-            highlight(display, self.__hovered, HOVERED_HIGHLIGHT)
+            if self.__hovered is not None:
+                highlight(display, self.__hovered, HOVERED_HIGHLIGHT)
+        if self.__mirrored:
+            current_board_image = Surface((BOARD_SIZE, BOARD_SIZE), SRCALPHA)
+            current_board_image.blit(display.surface, ((BOARD_SIZE - display.width) // 2, 0))
+            display.blit(transform.rotate(current_board_image, 180), ((display.width - BOARD_SIZE) // 2, 0))
 
     def lock_hovers(self):
         self.__hovered = None
@@ -127,8 +175,12 @@ class Board:
         tile_y = (BOARD_SIZE - 5 - y) // (TILE_SIZE + 6)
         if not (0 <= tile_x < 6 and 0 <= tile_y < 6):
             self.__hovered = None
+            Player.FILE = '-'
+            Player.RANK = '-'
             return
-        self.__hovered = (tile_x, tile_y)
+        self.__hovered = (tile_x, tile_y) if not self.__mirrored else (5 - tile_x, 5 - tile_y)
+        Player.FILE = convert_board_x_coordinate_to_file(tile_x)
+        Player.RANK = convert_board_y_coordinate_to_rank(tile_y)
 
     def handle_tile_held(self):
         if Player.SETUP:

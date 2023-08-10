@@ -15,7 +15,17 @@ from src.constants import (BUFFER, TEXT_FONT_SIZE, LARGER_FONT_SIZE, TEXT_BUFFER
                            FORFEIT_PNG, FORFEIT_SIZE, TILE_HELP_PNG, TILE_HELP_SIZE, TROOP_MOVEMENTS)
 from copy import copy
 from itertools import chain
-from time import time
+from time import sleep, time
+
+
+def get_match_type(player1, player2):
+    if isinstance(player1, AI):
+        if isinstance(player2, AI):
+            return 'EvE'  # "environment vs environment" - AI vs AI
+        return 'EvP'  # "environment vs player" - AI vs Player, where Player 1 is the AI
+    elif isinstance(player2, AI):
+        return 'PvE'  # "player vs environment" - Player vs AI, where Player 2 is the AI
+    return 'PvP'  # "player vs player" - no AI present
 
 
 class Game:
@@ -31,9 +41,10 @@ class Game:
         self.__turn = 0
         player1 = Player(1)
         # player1 = AI(1, self, Difficulty.BEGINNER)
-        # player2 = Player(2)
-        player2 = AI(2, self, Difficulty.HARD)
+        player2 = Player(2)
+        # player2 = AI(2, self, Difficulty.HARD)
         self.__players = (player1, player2)
+        self.__match_type = get_match_type(player1, player2)
         self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
         self.__non_meaningful_moves_counter = 0
@@ -58,9 +69,9 @@ class Game:
 
         :param display: Display object containing the main game window
         """
-        if self.__turn == 0 or self.__board.held_tile is not None or self.__board.hovered is None:
-            display.draw_all()
-        self.__board.draw(display)
+        display.draw_all()
+        if not Board.ANIMATING:
+            self.__board.draw(display)
         if Player.SELECTED is not None:
             if Player.SELECTED_TILE_HOVERED:
                 Player.TILE_HELP_IMAGE.blit(TILE_HELP_PNG,
@@ -69,6 +80,10 @@ class Game:
                 Player.TILE_HELP_IMAGE.blit(TILE_HELP_PNG, (0, -TILE_HELP_SIZE if display.theme == Theme.DARK else 0))
         for player in self.__players:
             player.update(display)
+            if player.is_in_check and Player.SELECTED != player.duke and not Board.ANIMATING:
+                self.__board.draw_check(display, player.duke.coords)
+        if self.__board.held_tile is not None:
+            self.__board.draw_held(display)
         if isinstance(Player.PLAYER, Player):
             if Player.OFFER_DRAW_HOVERED:
                 Player.OFFER_DRAW_IMAGE.blit(OFFER_DRAW_PNG, (-OFFER_DRAW_SIZE,
@@ -88,7 +103,7 @@ class Game:
                                                     -FORFEIT_SIZE if display.theme == Theme.DARK else 0))
         display.blit(Player.OFFER_DRAW_IMAGE, (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE))
         display.blit(Player.FORFEIT_IMAGE, (OFFER_DRAW_SIZE + 2 * BUFFER, display.height - BUFFER - FORFEIT_SIZE))
-        if self.__turn == 0:
+        if self.__turn == 0 and Player.PLAYER is not None:
             display.write('- SETUP PHASE -',
                           (display.width // 2 - 4 * LARGER_FONT_SIZE, (display.height - LARGER_FONT_SIZE) // 2),
                           False, LARGER_FONT_SIZE)
@@ -104,12 +119,13 @@ class Game:
             seconds = round(self.__finish_time - minutes * 60)
         display.write(f'Match Time: {minutes:02d}:{seconds:02d}',
                       (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE - 2 * TEXT_FONT_SIZE - 4 * TEXT_BUFFER))
-        display.write(f'Turn {self.__turn}',
+        display.write(f'Turn {self.__turn}'
+                      + (f' (Player {((self.__turn + 1) % 2) + 1}\'s turn)' if self.__turn > 0 else ''),
                       (BUFFER, display.height - BUFFER - OFFER_DRAW_SIZE - TEXT_FONT_SIZE - 2 * TEXT_BUFFER))
         display.write('File / Rank:',
                       (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER, display.height - BUFFER - FORFEIT_SIZE))
-        display.write(f'{Player.FILE} / {Player.RANK}',
-                      (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER + 4 * TEXT_BUFFER,
+        display.write(f'{Player.FILE}{Player.RANK}',
+                      (OFFER_DRAW_SIZE + FORFEIT_SIZE + 3 * BUFFER + 5 * TEXT_BUFFER,
                        (display.height - BUFFER - FORFEIT_SIZE + TEXT_FONT_SIZE +
                         2 * TEXT_BUFFER)))
 
@@ -119,6 +135,12 @@ class Game:
         for player in self.__players:  # do some initial setup
             self.__actions_taken += player.setup_phase(self.__board)  # initial tile placements
             self.__board.lock_hovers()
+            while Display.MUTEX.locked():
+                pass
+            while not Display.MUTEX.locked():
+                pass  # wait for the screen to refresh at least once
+            if self.__match_type[2] == 'P':  # Player 2 is a human player
+                self.board.animate_rotation(display)
         for player in self.players:
             player.update_choices(self.calculate_choices(player))
 
@@ -130,6 +152,12 @@ class Game:
             2. carry out player decision on board
             3. recalculate current game state, including what both players can currently do, and if check/checkmate
         """
+        while Display.MUTEX.locked():
+            pass
+        while not Display.MUTEX.locked():
+            pass  # wait for the screen to refresh at least once
+        if self.__match_type[2] == 'P' and self.__turn > 0:
+            self.board.animate_rotation(display)
         self.__turn += 1
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
         with display.HANDLER_LOCK:

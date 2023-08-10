@@ -20,12 +20,23 @@ def convert_file_and_rank_to_coordinates(file, rank, player_side=1):
     """
     file_mapping = {'a': -2, 'b': -1, 'c': 0, 'd': 1, 'e': 2}
     x = file_mapping.get(file)
-    if x is None:
-        raise ValueError("Invalid file")
     y = rank - 3
     if player_side == 1:
         return x, y
     return -x, -y
+
+
+def convert_board_x_coordinate_to_file(x):
+    file_mapping = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F'}
+    return file_mapping.get(x)
+
+
+def convert_board_y_coordinate_to_rank(y):
+    return y + 1
+
+
+def convert_board_coords_to_file_and_rank(x, y):
+    return convert_board_x_coordinate_to_file(x), convert_board_y_coordinate_to_rank(y)
 
 
 def tile_is_open_or_enemy(tile, player):

@@ -6,7 +6,7 @@ This module contains all code related to bags that hold tiles.
 """
 
 from pygame import SRCALPHA, Surface
-from constants import BUFFER, TEXT_FONT_SIZE, BAG_PNG, BAG_SIZE
+from constants import BUFFER, BAG_PNG, BAG_SIZE
 from copy import copy
 import random
 
@@ -120,7 +120,7 @@ class Bag:
         display.draw(self.__image, (x, y))
         if self.__side == 1:
             display.write('{:02d} tiles left'.format(len(self.__tiles)),
-                          (x + BAG_SIZE, y - BUFFER - TEXT_FONT_SIZE), True)
+                          (x + BAG_SIZE, y - 2 * BUFFER), True)
         else:
             display.write('{:02d} tiles left'.format(len(self.__tiles)), (x, y + BAG_SIZE + BUFFER))
 

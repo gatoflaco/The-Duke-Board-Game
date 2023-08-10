@@ -67,6 +67,11 @@ while not Global.CRASHED:
                 game.board.handle_tile_clicked()
                 if isinstance(Player.PLAYER, Player):  # can be changed by previous loc
                     Player.PLAYER.handle_clickable_clicked()
+        # if event.type == pygame.KEYDOWN:
+        #     if event.key == pygame.K_LEFT:
+        #         location -= 1
+        #     if event.key == pygame.K_RIGHT:
+        #         location += 1
         if event.type == pygame.VIDEORESIZE:
             width, height = event.size
             display.handle_resize(width, height)

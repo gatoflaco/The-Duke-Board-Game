@@ -6,7 +6,7 @@ This module contains all code related to tiles that are placed on the board.
 """
 
 from pygame import SRCALPHA, Surface, transform
-from src.constants import BOARD_SIZE, PLAYER_COLORS, TILE_PNGS, TILE_SIZE
+from src.constants import BOARD_SIZE, PLAYER_COLORS, TILE_PNGS, TILE_SIZE, TILE_SHADER
 from copy import copy
 
 
@@ -178,5 +178,8 @@ class Troop(Tile):
         :param y: y-coordinate of pixel location on game window of upper left corner of tile
         :param rotated: boolean that causes the tile to be drawn 180 degrees rotated when True
         """
-        # self.__back_image.unlock()
         display.blit(transform.rotate(self.__back_image, 180) if rotated else self.__back_image, (x, y))
+        shader = Surface((TILE_SIZE, TILE_SIZE))
+        shader.fill(TILE_SHADER)
+        shader.set_alpha(150)
+        display.blit(shader, (x, y))
