@@ -40,11 +40,13 @@ class Game:
         self.__board = Board()
         self.__turn = 0
         player1 = Player(1)
-        # player1 = AI(1, self, Difficulty.BEGINNER)
-        player2 = Player(2)
-        # player2 = AI(2, self, Difficulty.HARD)
+        # player1 = AI(1, self, Difficulty.EXPERT)
+        # player2 = Player(2)
+        player2 = AI(2, self, Difficulty.EXPERT, 5243864850520451137)
         self.__players = (player1, player2)
         self.__match_type = get_match_type(player1, player2)
+        if self.__match_type == 'EvP':
+            self.__board.mirror()
         self.__actions_taken = []  # will hold "choice" dicts
         self.__winner = None
         self.__non_meaningful_moves_counter = 0
@@ -139,7 +141,7 @@ class Game:
                 pass
             while not Display.MUTEX.locked():
                 pass  # wait for the screen to refresh at least once
-            if self.__match_type[2] == 'P':  # Player 2 is a human player
+            if self.__match_type == 'PvP':  # Player 1 and 2 are human players
                 self.board.animate_rotation(display)
         for player in self.players:
             player.update_choices(self.calculate_choices(player))
@@ -152,12 +154,6 @@ class Game:
             2. carry out player decision on board
             3. recalculate current game state, including what both players can currently do, and if check/checkmate
         """
-        while Display.MUTEX.locked():
-            pass
-        while not Display.MUTEX.locked():
-            pass  # wait for the screen to refresh at least once
-        if self.__match_type[2] == 'P' and self.__turn > 0:
-            self.board.animate_rotation(display)
         self.__turn += 1
         player = self.__players[self.__turn % len(self.__players) - 1]  # player whose turn should be taken
         with display.HANDLER_LOCK:
@@ -173,7 +169,7 @@ class Game:
             return self.__end(0, 'Game over by the 50 move rule.')
         player.update_choices(self.calculate_choices(player))  # recalculate player's allowed moves
         player_attacks = get_attacks(self.calculate_choices(player, False))  # don't consider Duke safety here
-        dead_position = True
+        dead_position = True  # assume True until found to be False
         if not self.__can_only_move_duke(player):
             dead_position = False
 
@@ -191,9 +187,15 @@ class Game:
             other.update_choices(other_choices)
             if dead_position and not self.__can_only_move_duke(other):
                 dead_position = False
-
         if dead_position:
-            self.__end(0, 'Dead position - neither player can checkmate.')
+            return self.__end(0, 'Dead position - neither player can checkmate.')
+
+        while Display.MUTEX.locked():
+            pass
+        while not Display.MUTEX.locked():
+            pass  # wait for the screen to refresh at least once
+        if self.__match_type == 'PvP':
+            self.board.animate_rotation(display)
 
     def calculate_choices(self, player, consider_duke_safety=True, board=None, players=None):
         """Determines everything a player can legally do, given the current board state.

@@ -307,7 +307,7 @@ class AI(Player):
                 pull_scores.append(self.__consider_consequences(choice))
                 if pull_scores[-1] != -1:
                     total += pull_scores[-1]
-                    non_checkmate_count != 1
+                    non_checkmate_count += 1
             if non_checkmate_count == 0:  # literally anything that gets pulled will checkmate the opponent
                 return -1  # special int that tells caller that they should definitely make this choice
             average_score = total // non_checkmate_count
@@ -419,6 +419,7 @@ class AI(Player):
         if choice['action_type'] == 'pull':  # note that calling this function with a pull action requires a specific \
             x, y = choice['src_location']    # troop type being tested; that is, choice['tile'].name should not be ''
             ai_copy.play_new_troop_tile(x, y, choice['tile'])  # this loc is why the above must be true
+            score += TROOP_WEIGHTS[choice['tile'].name]['1']
         ai_copy.__game.make_choice(ai_copy, choice, True, board_copy, all_player_copies)  # literally make the move
         ai_copy.update_choices(ai_copy.__game.calculate_choices(ai_copy, True, board_copy, all_player_copies))
         new_attacks = get_attacks(ai_copy.choices)
@@ -432,12 +433,11 @@ class AI(Player):
             other_copy.update_choices(ai_copy.__game.calculate_choices(other_copy, True, board_copy, all_player_copies))
             if other_copy.duke.coords in ai_attacks:
                 other_copy.set_check(True)
-            if has_no_valid_choices(other_copy.choices):
-                if other_copy.is_in_check:  # this move checkmates!
+            if other_copy.is_in_check:
+                if has_no_valid_choices(other_copy.choices):  # this move checkmates!
                     score = -1
                     continue
-            if other_copy.is_in_check:
-                score += 1000
+                score += 200
             for tile in other_copy.tiles_in_play:  # conveniently ignores a captured tile
                 if tile.coords in original_attacks and tile.coords not in new_attacks:
                     score -= 100  # enemy troop was previously under threat, but no longer

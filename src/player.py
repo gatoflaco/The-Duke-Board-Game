@@ -399,3 +399,9 @@ class Player:
             pass  # TODO
         if Player.FORFEIT_HOVERED:
             pass  # TODO
+
+    def handle_escape_key_pressed(self):
+        if Player.SETUP:
+            return
+        if self._bag.state == Bag.SELECTED:
+            self._bag.set_state(Bag.SELECTABLE)

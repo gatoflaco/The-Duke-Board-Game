@@ -88,6 +88,9 @@ class Board:
     def held_tile(self):
         return self.__held
 
+    def mirror(self):
+        self.__mirrored = not self.__mirrored
+
     @property
     def is_mirrored(self):
         return self.__mirrored
@@ -185,13 +188,25 @@ class Board:
     def handle_tile_held(self):
         if Player.SETUP:
             return
-        if self.__hovered in Player.PLAYER.choices['act']:
-            self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
-            Player.SELECTED = self.__held
-        elif (Player.SELECTED in Player.PLAYER.choices['act'] and self.__hovered in
-              Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands']):
-            self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
-            Player.COMMANDED = self.__held
+        if (Player.SELECTED is not None and Player.SELECTED.coords in Player.PLAYER.choices['act'] and self.__hovered in
+                Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands']):
+            if Player.COMMANDED is not None:
+                if Player.COMMANDED.coords == self.__hovered:
+                    self.__held = None
+                elif Player.SELECTED.coords == self.__hovered:
+                    self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
+                    Player.SELECTED = self.__held
+                    Player.COMMANDED = None
+            else:
+                self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
+                Player.COMMANDED = self.__held
+        elif self.__hovered in Player.PLAYER.choices['act']:
+            if Player.COMMANDED is None and Player.SELECTED is not None and Player.SELECTED.coords == self.__hovered:
+                self.__held = None
+            else:
+                self.__held = self.__grid[self.__hovered[0]][self.__hovered[1]]
+                Player.SELECTED = self.__held
+                Player.COMMANDED = None
 
     def handle_tile_clicked(self):
         if self.__hovered is None:  # click must have been off the board, definitely goes back one state
@@ -209,9 +224,9 @@ class Board:
                         'tile': None
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
-                elif Player.SETUP:
+                elif Player.SETUP:  # during setup, bag should be set to clicked state throughout
                     return  # don't release the held tile
-                else:  # player clicked somewhere they aren't allowed to play a tile
+                else:  # player clicked somewhere they aren't allowed to play a tile (and it's not the setup phase)
                     pass  # in player.py, handle_clickable_clicked() should handle going back a state
             elif Player.COMMANDED is not None:  # when True, Player.SELECTED must also not be None
                 if (self.__hovered in
@@ -224,6 +239,8 @@ class Board:
                         'cmd_location': Player.SELECTED.coords,
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
+                elif self.__held is not None and self.__hovered == self.__held.coords:  # player was not trying to drag
+                    pass
                 else:  # player clicked somewhere they aren't allowed to command the commanded troop to move
                     Player.COMMANDED = None  # go back a state
             elif Player.SELECTED is not None:
@@ -249,10 +266,17 @@ class Board:
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
                 elif self.__held is not None and self.__hovered == self.__held.coords:  # player was not trying to drag
-                    self.__held = None  # stop considering the clicked tile to be held
+                    pass
                 else:  # player clicked somewhere they aren't allowed to move, strike, or command with selected troop
                     Player.SELECTED = None  # go back a state
             else:
                 Player.SELECTED = self.__grid[self.__hovered[0]][self.__hovered[1]]
-        if self.__held is not None:
-            self.__held = None
+        self.__held = None  # stop considering the clicked tile to be held
+
+    def handle_escape_key_pressed(self):
+        if Player.SETUP or self.__held is not None:
+            return  # don't take esc key inputs while dragging a tile
+        elif Player.COMMANDED is not None:
+            Player.COMMANDED = None
+        elif Player.SELECTED is not None:
+            Player.SELECTED = None
