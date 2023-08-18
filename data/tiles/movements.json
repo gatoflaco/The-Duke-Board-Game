@@ -673,8 +673,8 @@
   "Priest": {
     "side 1": [
       {
-        "file": "a",
-        "rank": 1,
+        "file": "b",
+        "rank": 2,
         "move": "SLIDE"
       },
       {
