@@ -5,6 +5,8 @@ Isaac Jung
 This module contains utility functions.
 """
 
+from src.modal import Modal
+
 
 def convert_file_and_rank_to_coordinates(file, rank, player_side=1):
     """Converts from a location written in (file, rank) format to actual (x, y)-coordinates.
@@ -152,6 +154,11 @@ def check_draw_by_counter(counter):
     return False
 
 
+def can_checkmate(player1, player2, board):
+    # TODO
+    return False
+
+
 def handle_help_clicked_setup(display):
     """Event handler for clicking the help icon during the game's setup phase.
 
@@ -169,6 +176,8 @@ def handle_help_clicked_gameplay(display, in_check=False):
         Should only be set to True when called at the start of a non-AI player's turn while they are in check
     """
     # TODO: more than just the following
+    with display.MUTEX:
+        Modal.MODAL = Modal('Help - Setup Phase', display, display.width // 2, display.height // 2)
     if in_check:
         print('You\'re in check!')
     else:

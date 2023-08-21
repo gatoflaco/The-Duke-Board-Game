@@ -106,7 +106,7 @@ class Board:
             Board.ANIMATING = True  # tells other modules not to draw the board (other things may still be rendered)
         current_board_image = Surface((BOARD_SIZE, BOARD_SIZE), SRCALPHA)
         current_board_image.blit(display.surface, ((BOARD_SIZE - display.width) // 2, 0))
-        for angle in range(1, 181, 2):
+        for angle in range(1, 181, 8):
             orig_rect = current_board_image.get_rect()
             rot_image = transform.rotate(current_board_image, angle)
             rot_rect = orig_rect.copy()
@@ -214,6 +214,8 @@ class Board:
                 Player.COMMANDED = None
             elif Player.SELECTED is not None:
                 Player.SELECTED = None
+            elif Player.SETUP:
+                return
         else:
             if Player.PLAYER.bag_clicked:
                 if self.__hovered in Player.PLAYER.choices['pull']:

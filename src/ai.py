@@ -293,8 +293,6 @@ class AI(Player):
             -1 is a special case that tells the caller that the choice actually SHOULD be picked, over anything else.
         """
         score = 0
-        #if self.__difficulty == Difficulty.BEGINNER:
-        #    return score    # if every choice scores 0, take_turn() should choose a random move
         score += self.__general_heuristics(choice)
 
         # next, pretend to make the move and see what effect it has on the game
@@ -426,8 +424,6 @@ class AI(Player):
         ai_attacks = get_attacks(ai_copy.__game.calculate_choices(ai_copy, False, board_copy))  # no Duke safety here
         all_enemy_attacks = set()  # consider what enemies would then be able to attack
         for other_copy in all_player_copies:  # recalculate the allowed moves for the opponent(s)
-            if score == -1:
-                break
             if ai_copy == other_copy:
                 continue
             other_copy.update_choices(ai_copy.__game.calculate_choices(other_copy, True, board_copy, all_player_copies))
@@ -435,21 +431,22 @@ class AI(Player):
                 other_copy.set_check(True)
             if other_copy.is_in_check:
                 if has_no_valid_choices(other_copy.choices):  # this move checkmates!
-                    score = -1
-                    continue
+                    ai_copy.__game.undo_choice(ai_copy, board_copy)
+                    return -1
                 score += 200
+            if can_checkmate(other_copy, ai_copy, board_copy):
+                return 0  # don't take this action if it would give the opponent the opportunity to checkmate
             for tile in other_copy.tiles_in_play:  # conveniently ignores a captured tile
                 if tile.coords in original_attacks and tile.coords not in new_attacks:
                     score -= 100  # enemy troop was previously under threat, but no longer
                 if tile.coords in new_attacks and tile.coords not in original_attacks:
                     score += 100  # enemy troop was not previously under threat, and now it is
             all_enemy_attacks = all_enemy_attacks.union(get_attacks(other_copy.choices))
-        if score != -1:  # consider if the move increased/decreased the number of friendly troops under attack
-            for tile in ai_copy.tiles_in_play:
-                if tile.coords in original_enemy_attacks and tile.coords not in all_enemy_attacks:
-                    score += 100
-                elif tile.coords in all_enemy_attacks and tile.coords not in original_enemy_attacks:
-                    score -= 100
+        for tile in ai_copy.tiles_in_play:  # consider increased/decreased number of friendly troops under attack
+            if tile.coords in original_enemy_attacks and tile.coords not in all_enemy_attacks:
+                score += 100
+            elif tile.coords in all_enemy_attacks and tile.coords not in original_enemy_attacks:
+                score -= 100
 
         ai_copy.__game.undo_choice(ai_copy, board_copy)
         return score

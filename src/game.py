@@ -15,7 +15,7 @@ from src.constants import (BUFFER, TEXT_FONT_SIZE, LARGER_FONT_SIZE, TEXT_BUFFER
                            FORFEIT_PNG, FORFEIT_SIZE, TILE_HELP_PNG, TILE_HELP_SIZE, TROOP_MOVEMENTS)
 from copy import copy
 from itertools import chain
-from time import sleep, time
+from time import time
 
 
 def get_match_type(player1, player2):
@@ -42,7 +42,7 @@ class Game:
         player1 = Player(1)
         # player1 = AI(1, self, Difficulty.EXPERT)
         # player2 = Player(2)
-        player2 = AI(2, self, Difficulty.EXPERT, 5243864850520451137)
+        player2 = AI(2, self, Difficulty.EXPERT)
         self.__players = (player1, player2)
         self.__match_type = get_match_type(player1, player2)
         if self.__match_type == 'EvP':

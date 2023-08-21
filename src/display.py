@@ -40,7 +40,7 @@ class Display:
     HANDLER_LOCK = Lock()  # used specifically to protect against showing the wrong menu during transitions
 
     def __init__(self, width=DISPLAY_WIDTH, height=DISPLAY_HEIGHT, theme=Theme.LIGHT):
-        self.__game_display = display.set_mode((width, height), RESIZABLE)
+        self.__pg_display = display.set_mode((width, height), RESIZABLE)
         self.__theme = theme
         self.__components = {
             'theme_toggler': {
@@ -78,7 +78,7 @@ class Display:
 
     @property
     def surface(self):
-        return self.__game_display
+        return self.__pg_display
 
     def toggle_theme(self):
         self.HANDLER_LOCK.release()
@@ -103,7 +103,7 @@ class Display:
         self.draw_help()
 
     def draw_bg(self):
-        self.__game_display.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
+        self.__pg_display.fill(BG_COLOR_DARK_MODE if self.__theme == Theme.DARK else BG_COLOR_LIGHT_MODE)
 
     def draw_theme_toggle(self):
         self.__components['theme_toggler']['image'] = Surface((THEME_TOGGLE_WIDTH, THEME_TOGGLE_HEIGHT), SRCALPHA)
@@ -150,14 +150,14 @@ class Display:
 
     @property
     def width(self):
-        return self.__game_display.get_width()
+        return self.__pg_display.get_width()
 
     @property
     def height(self):
-        return self.__game_display.get_height()
+        return self.__pg_display.get_height()
 
     def blit(self, surface, location):
-        self.__game_display.blit(surface, location)
+        self.__pg_display.blit(surface, location)
 
     def write(self, text, location, right_align=False, font_size=TEXT_FONT_SIZE):
         """Uses the blit function to write a string to the screen.
@@ -217,17 +217,17 @@ class Display:
                     callback(*args)  # execute callback function with args
 
     def calculate_theme_toggler_location(self):
-        return self.__game_display.get_width() - THEME_TOGGLE_WIDTH - BUFFER, BUFFER
+        return self.__pg_display.get_width() - THEME_TOGGLE_WIDTH - BUFFER, BUFFER
 
     def calculate_settings_location(self):
-        return self.__game_display.get_width() - THEME_TOGGLE_WIDTH - SETTINGS_SIZE - 2 * BUFFER, BUFFER
+        return self.__pg_display.get_width() - THEME_TOGGLE_WIDTH - SETTINGS_SIZE - 2 * BUFFER, BUFFER
 
     def calculate_help_location(self):
-        return self.__game_display.get_width() - THEME_TOGGLE_WIDTH - SETTINGS_SIZE - HELP_SIZE - 3 * BUFFER, BUFFER
+        return self.__pg_display.get_width() - THEME_TOGGLE_WIDTH - SETTINGS_SIZE - HELP_SIZE - 3 * BUFFER, BUFFER
 
     def handle_resize(self, width, height):
         if width < DISPLAY_WIDTH or height < DISPLAY_HEIGHT:
-            self.__game_display = display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT), RESIZABLE)
+            self.__pg_display = display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT), RESIZABLE)
         for component in self.__components.values():
             component['location'] = component['resized_handler']()
         self.draw_all()
