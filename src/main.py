@@ -52,7 +52,7 @@ while not Global.CRASHED:
     x, y = pygame.mouse.get_pos()
 
     if Modal.MODAL is not None:
-        Modal.MODAL.draw_all(display)
+        Modal.MODAL.draw_all()
         Modal.MODAL.handle_component_hovers(x, y)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -65,7 +65,7 @@ while not Global.CRASHED:
             if event.type == pygame.VIDEORESIZE:
                 width, height = event.size
                 display.handle_resize(width, height)
-                Modal.MODAL.handle_resize(display, game)
+                Modal.MODAL.handle_resize(game)
 
     else:
         display.handle_component_hovers(x, y)
