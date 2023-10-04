@@ -87,7 +87,7 @@ while not Global.CRASHED:
                 elif isinstance(Player.PLAYER, Player):
                     game.board.handle_tile_clicked()
                     if isinstance(Player.PLAYER, Player):  # can be changed by previous loc
-                        Player.PLAYER.handle_clickable_clicked()
+                        Player.PLAYER.handle_clickable_clicked(game.board)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if isinstance(Player.PLAYER, Player):

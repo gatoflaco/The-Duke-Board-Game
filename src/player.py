@@ -6,11 +6,12 @@ This module contains all code related to players in a given game of the Duke.
 """
 
 from pygame import SRCALPHA, Surface
-from src.display import Display
+from src.display import Display, Theme
 from src.bag import Bag
 from src.tile import Troop
-from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE, BOARD_SIZE,
-                           PLAYER_COLORS, CHECK_PNG, TILE_HELP_SIZE, TILE_TYPES, TILE_SIZE, STARTING_TROOPS, BAG_SIZE)
+from src.constants import (BUFFER, TEXT_FONT_SIZE, TEXT_BUFFER, OFFER_DRAW_SIZE, FORFEIT_SIZE,
+                           PLAYER_COLORS, PULL_TILE_PNG, PULL_TILE_WIDTH, PULL_TILE_HEIGHT, TILE_HELP_SIZE, TILE_TYPES,
+                           TILE_SIZE, STARTING_TROOPS, BAG_SIZE)
 from copy import copy
 from time import sleep
 
@@ -53,9 +54,13 @@ class Player:
     PLAYER = None  # gets set when a non-AI player is taking their turn
     FILE = '-'  # responds to player typing a letter a through f
     RANK = '-'  # responds to player typing a number 1 through 6
+    AWAITING_CONFIRMATION = False  # set to true when a player's click triggers a prompt for confirmation
     SELECTED = None  # Tile object selected by the current player
     COMMANDED = None  # Tile object being commanded by SELECTED
     CHOICE = None  # holds the "choice" dict determined by UI input for the current player
+    PULL_TILE_IMAGE = Surface((PULL_TILE_WIDTH, PULL_TILE_HEIGHT), SRCALPHA)
+    PULL_TILE_HOVERED = False
+    PULLED_TILE = None  # Tile object pulled from the bag
     OFFER_DRAW_IMAGE = Surface((OFFER_DRAW_SIZE, OFFER_DRAW_SIZE), SRCALPHA)
     OFFER_DRAW_HOVERED = False
     FORFEIT_IMAGE = Surface((FORFEIT_SIZE, FORFEIT_SIZE), SRCALPHA)
@@ -201,6 +206,9 @@ class Player:
                                                   display.height - 2 * TILE_SIZE - BUFFER)
                     display.blit(Player.TILE_HELP_IMAGE, (display.width - BAG_SIZE - 2 * BUFFER - TILE_SIZE,
                                                           display.height - 2 * TILE_SIZE - BUFFER))
+                elif Player.AWAITING_CONFIRMATION:
+                    display.blit(Player.PULL_TILE_IMAGE, (display.width - BAG_SIZE - 2 * BUFFER - PULL_TILE_WIDTH,
+                                                          display.height - PULL_TILE_HEIGHT - BUFFER))
             else:
                 display.blit(Surface((TEXT_FONT_SIZE, TEXT_FONT_SIZE), SRCALPHA),
                              (display.width - BUFFER - TEXT_FONT_SIZE,
@@ -235,6 +243,8 @@ class Player:
                         Player.SELECTED.draw(display, BAG_SIZE + 2 * BUFFER, BUFFER, True)
                         Player.SELECTED.draw_back(display, BAG_SIZE + 2 * BUFFER, TILE_SIZE + BUFFER, True)
                     display.blit(Player.TILE_HELP_IMAGE, (BAG_SIZE + 2 * BUFFER, BUFFER))
+                elif Player.AWAITING_CONFIRMATION:
+                    display.blit(Player.PULL_TILE_IMAGE, (BAG_SIZE + 2 * BUFFER, BUFFER))
             else:
                 display.blit(Surface((TEXT_FONT_SIZE, TEXT_FONT_SIZE), SRCALPHA),
                              (BUFFER, BUFFER + BAG_SIZE + BUFFER + 2 * TEXT_FONT_SIZE))
@@ -260,7 +270,7 @@ class Player:
                 while Player.CHOICE is None:
                     sleep(0.1)
                 i, j = Player.CHOICE['src_location']
-                board.set_tile(i, j, self._in_play[-1])
+                board.set_tile(i, j, Player.CHOICE['tile'])
                 Display.MUTEX.release()
                 self._in_play[-1].move(i, j)
                 choice_list.append(Player.CHOICE)
@@ -279,7 +289,7 @@ class Player:
                 sleep(0.1)
             i, j = Player.CHOICE['src_location']
             self._choices['pull'].remove((i, j))
-            board.set_tile(i, j, self._in_play[-1])
+            board.set_tile(i, j, Player.CHOICE['tile'])
             Display.MUTEX.release()
             self._in_play[-1].move(i, j)
             choice_list.append(Player.CHOICE)
@@ -306,7 +316,7 @@ class Player:
         choice = Player.CHOICE
         if choice['action_type'] == 'pull':  # need to actually draw the new tile here
             x, y = choice['src_location']
-            choice['tile'] = self.play_new_troop_tile(x, y)
+            self.play_new_troop_tile(x, y, choice['tile'])
         Player.CHOICE = None
         return choice
 
@@ -360,6 +370,26 @@ class Player:
                 return troop_tile
         return None  # not found
 
+    def handle_pull_tile_hovers(self, display, x, y):
+        rect = Player.PULL_TILE_IMAGE.get_rect()
+        if self._side == 1:
+            if rect.collidepoint((x - (display.width - BAG_SIZE - 2 * BUFFER - PULL_TILE_WIDTH),
+                                  y - (display.height - PULL_TILE_HEIGHT - BUFFER))):
+                Player.PULL_TILE_IMAGE.blit(PULL_TILE_PNG, (-PULL_TILE_WIDTH,
+                                                            -PULL_TILE_HEIGHT if display.theme == Theme.DARK else 0))
+                Player.PULL_TILE_HOVERED = True
+            else:
+                Player.PULL_TILE_IMAGE.blit(PULL_TILE_PNG, (0, -PULL_TILE_HEIGHT if display.theme == Theme.DARK else 0))
+                Player.PULL_TILE_HOVERED = False
+        else:
+            if rect.collidepoint(x - (BAG_SIZE + 2 * BUFFER), y - BUFFER):
+                Player.PULL_TILE_IMAGE.blit(PULL_TILE_PNG, (-PULL_TILE_WIDTH,
+                                                            -PULL_TILE_HEIGHT if display.theme == Theme.DARK else 0))
+                Player.PULL_TILE_HOVERED = True
+            else:
+                Player.PULL_TILE_IMAGE.blit(PULL_TILE_PNG, (0, -PULL_TILE_HEIGHT if display.theme == Theme.DARK else 0))
+                Player.PULL_TILE_HOVERED = False
+
     def handle_tile_help_hovers(self, display, x, y):
         if Player.SELECTED is not None:
             rect = Player.SELECTED.image.get_rect()
@@ -382,19 +412,31 @@ class Player:
 
     def handle_clickable_hovers(self, display, x, y):
         self._bag.handle_bag_hovers(display, x, y, self._side)
-        self.handle_tile_help_hovers(display, x, y)
+        if Player.AWAITING_CONFIRMATION:
+            self.handle_pull_tile_hovers(display, x, y)
+        else:
+            self.handle_tile_help_hovers(display, x, y)
         handle_offer_draw_hovers(display, x, y)
         handle_forfeit_hovers(display, x, y)
         # note that tile hovers are handled by the board, because you may want to hover over opponent tiles
 
-    def handle_clickable_clicked(self):
-        if Player.SETUP:
+    def handle_clickable_clicked(self, board):
+        if Player.SETUP or Player.PULLED_TILE is not None:
             return
-        if self._bag.state == Bag.SELECTED:
+        if Player.AWAITING_CONFIRMATION:
+            Player.AWAITING_CONFIRMATION = False
+            Player.PULL_TILE_IMAGE = Surface((PULL_TILE_WIDTH, PULL_TILE_HEIGHT), SRCALPHA)
+            if Player.PULL_TILE_HOVERED:
+                Player.PULLED_TILE = self._bag.pull()
+                board.set_held(Player.PULLED_TILE)
+            else:
+                self._bag.set_state(Bag.SELECTABLE)
+        elif self._bag.state == Bag.SELECTED:
             self._bag.set_state(Bag.SELECTABLE)
         elif self._bag.hovered:
             if self._bag.state == Bag.SELECTABLE:
                 self._bag.set_state(Bag.SELECTED)
+                Player.AWAITING_CONFIRMATION = True
         if Player.OFFER_DRAW_HOVERED:
             pass  # TODO
         if Player.FORFEIT_HOVERED:

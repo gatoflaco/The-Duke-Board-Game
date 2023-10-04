@@ -147,7 +147,7 @@ class Board:
             if isinstance(tile, Tile) and self.__held != tile:
                 tile.draw(display)
         if isinstance(Player.PLAYER, Player):
-            if Player.PLAYER.bag_clicked:
+            if Player.PLAYER.bag_clicked and (Player.SETUP or Player.PULLED_TILE is not None):
                 for location in Player.PLAYER.choices['pull']:
                     highlight(display, location, HOVERED_HIGHLIGHT)
             else:
@@ -186,7 +186,7 @@ class Board:
         Player.RANK = convert_board_y_coordinate_to_rank(tile_y)
 
     def handle_tile_held(self):
-        if Player.SETUP:
+        if Player.SETUP or Player.PULLED_TILE is not None:
             return
         if (Player.SELECTED is not None and Player.SELECTED.coords in Player.PLAYER.choices['act'] and self.__hovered in
                 Player.PLAYER.choices['act'][Player.SELECTED.coords]['commands']):
@@ -214,19 +214,20 @@ class Board:
                 Player.COMMANDED = None
             elif Player.SELECTED is not None:
                 Player.SELECTED = None
-            elif Player.SETUP:
+            elif Player.SETUP or Player.PULLED_TILE is not None:
                 return
         else:
             if Player.PLAYER.bag_clicked:
-                if self.__hovered in Player.PLAYER.choices['pull']:
+                if self.__hovered in Player.PLAYER.choices['pull'] and (Player.SETUP or Player.PULLED_TILE is not None):
                     Player.PLAYER = None
+                    Player.PULLED_TILE = None
                     Player.CHOICE = {
                         'action_type': 'pull',
                         'src_location': self.__hovered,
-                        'tile': None
+                        'tile': self.__held
                     }
                     Display.MUTEX.acquire()  # to be released by the game thread
-                elif Player.SETUP:  # during setup, bag should be set to clicked state throughout
+                elif Player.SETUP or Player.PULLED_TILE is not None:  # bag should be set to clicked state throughout
                     return  # don't release the held tile
                 else:  # player clicked somewhere they aren't allowed to play a tile (and it's not the setup phase)
                     pass  # in player.py, handle_clickable_clicked() should handle going back a state

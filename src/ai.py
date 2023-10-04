@@ -214,6 +214,31 @@ class AI(Player):
         if total_score == 0:  # when total score is 0, this means all choices are equally bad
             return self.__return_choice(choice_list[0], tic)  # if all choices are equally bad, this will be random
 
+        # since pull scores are calculated per valid pull location, we need to calculate the average pull score overall
+        # this also means that in choice_list and mapping, there must only be one pull-type choice and score
+        if len(self._choices['pull']) > 0:  # no need to - and literally can't - calculate an average if AI cannot pull
+            pull_score_sum = 0
+            i = 0
+            while i < len(choice_list):
+                if choice_list[i]['action_type'] == 'pull':
+                    pull_score_sum += mapping[i]
+                    choice_list = choice_list[:i] + choice_list[i+1:]
+                    j = i
+                    while j < len(choice_list):
+                        mapping[j] = mapping[j+1]
+                        j += 1
+                    mapping.pop(j)
+                else:
+                    i += 1
+            average_pull_score = pull_score_sum // len(self._choices['pull'])
+            choice_list.append({
+                'action_type': 'pull',
+                'src_location': (-1, -1),
+                'tile': Troop('', self._side, (-1, -1), True)
+            })
+            mapping[i] = average_pull_score
+
+
         # next, we bias the scores towards the average - the easier the difficulty, the closer to the average we shift
         # this will make easier difficulties have a more uniform score distribution
         # i.e., the easier difficulties will artificially increase their odds of making poorly-scored choices
@@ -237,13 +262,59 @@ class AI(Player):
         :return: special dict called "choice", whose format is documented in docs/choice_formats.txt
             It may be updated if the choice was to pull.
         """
+        if choice['action_type'] == 'pull':  # need to actually draw the new tile here, then score where to put it
+            choice['tile'] = self._bag.pull()
+            choice_list = []
+            mapping = {}
+            total_score = 0
+            for location in self._choices['pull']:
+                choice_list.append({
+                    'action_type': 'pull',
+                    'src_location': location,
+                    'tile': Troop(choice['tile'].name, self._side, location, True)
+                })
+            shuffle(choice_list)  # for randomness
+            for i in range(len(choice_list)):
+                score = self.__score_choice(choice_list[i])
+                if score == -1:  # score of -1 means to absolutely pick this choice right away
+                    if self.__difficulty > Difficulty.EASY:
+                        x, y = choice_list[i]['src_location']
+                        choice['src_location'] = x, y
+                        self.play_new_troop_tile(x, y, choice['tile'])
+                        toc = time()
+                        dif = toc - tic
+                        if dif < MIN_TURN_TIME:
+                            sleep(MIN_TURN_TIME - dif)
+                        return choice
+                    score = 1000
+                total_score += score
+                mapping[i] = score
+            if total_score == 0:  # when total score is 0, this means all choices are equally bad
+                x, y = choice_list[0]['src_location']
+                choice['src_location'] = x, y
+                self.play_new_troop_tile(x, y, choice['tile'])
+                toc = time()
+                dif = toc - tic
+                if dif < MIN_TURN_TIME:
+                    sleep(MIN_TURN_TIME - dif)
+                return choice  # if all choices are equally bad, this will be random
+            average_score = sum(value for value in mapping.values()) // len(mapping)
+            cur_total = 0.0
+            n = randrange(0, total_score)  # roll the rng
+            new_choice = None
+            for i in range(len(choice_list)):
+                new_choice = choice_list[i]
+                cur_total += round(((mapping[i] * 10 * self.__difficulty.value + average_score)
+                                    / (10 * self.__difficulty.value + 1)), 2)
+                if n < cur_total:  # found the choice in whose range the rng landed
+                    break
+            x, y = new_choice['src_location']
+            choice['src_location'] = x, y
+            self.play_new_troop_tile(x, y, choice['tile'])
         toc = time()
         dif = toc - tic
         if dif < MIN_TURN_TIME:
             sleep(MIN_TURN_TIME - dif)
-        if choice['action_type'] == 'pull':  # need to actually draw the new tile here
-            x, y = choice['src_location']
-            choice['tile'] = self.play_new_troop_tile(x, y)
         return choice
 
     def __initialize_choice_list(self):
@@ -296,7 +367,7 @@ class AI(Player):
         score += self.__general_heuristics(choice)
 
         # next, pretend to make the move and see what effect it has on the game
-        if choice['action_type'] == 'pull':  # special handling for pull
+        if choice['action_type'] == 'pull' and choice['tile'].name == '':  # special handling for pull
             pull_scores = []
             total = 0
             non_checkmate_count = 0
@@ -332,8 +403,12 @@ class AI(Player):
         x, y = choice['src_location']
         if choice['action_type'] == 'pull':
             score += self.__consider_trapped_duke(-1, -1, x, y)
-            # TODO: call function to calculate expected value of tile that would be pulled
-            #  that is, sum up all (probability of pulling t * value of t on side 1) and divide for the average
+            if choice['tile'].name == '':
+                pass
+                # TODO: call function to calculate expected value of tile that would be pulled
+                #  that is, sum up all (probability of pulling t * value of t on side 1) for the average
+            else:
+                score += TROOP_WEIGHTS[choice['tile'].name]['1']
         elif choice['action_type'] == 'mov':
             i, j = choice['dst_location']
             dst_tile = board.get_tile(i, j)

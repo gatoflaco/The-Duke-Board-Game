@@ -61,13 +61,16 @@ HOVERED_HIGHLIGHT = Color(255, 215, 0)  # gold
 MOV_HIGHLIGHT = Color(0, 255, 190)  # sea green
 STR_HIGHLIGHT = Color(255, 10, 10)  # red
 CMD_HIGHLIGHT = Color(160, 0, 255)  # purple
+CHECK_PNG = image.load('assets/pngs/warning.png')
 
 # player constants
 PLAYER_COLORS = [  # list of colors associated with each player
     Color(100, 150, 255),  # blue
     Color(0, 255, 25)  # green
 ]
-CHECK_PNG = image.load('assets/pngs/warning.png')
+PULL_TILE_PNG = image.load('assets/pngs/pull_tile.png')
+PULL_TILE_WIDTH = 128
+PULL_TILE_HEIGHT = 32
 TILE_HELP_PNG = image.load('assets/pngs/tile_help.png')
 TILE_HELP_SIZE = 16
 
